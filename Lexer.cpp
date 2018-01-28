@@ -49,6 +49,8 @@ vector<Token> Lexer::scanTokens()
             default:
                 if (isDigit(ch))
                     scanNumber();
+                else if (isAlpha(ch))
+                    scanIdentifier();
                 else
                     throw runtime_error("Unexpected Character " + errorSignature() + " : " + (char)ch);
         }
@@ -91,23 +93,21 @@ uint32_t Lexer::peek(int offset) {
     return utf8::peek_next(temp, end);
 }
 
+bool Lexer::isDigit(uint32_t ch) {
+    return '0' <= ch && ch <= '9' ;
+}
+
 void Lexer::scanString(char delimiter) {
     string::iterator start = iterator;
-    do
+    while (peek() != delimiter)
     {
-        string d = string(start, iterator);
         if (isAtEnd() or next() == '\n')
             throw runtime_error("Unterminated string " + errorSignature());
     }
-    while (peek() != delimiter);
 
     string* value = new string(start, iterator);
     addToken(TokenType::String, value);
     next();
-}
-
-bool Lexer::isDigit(uint32_t ch) {
-    return '0' <= ch && ch <= '9' ;
 }
 
 void Lexer::scanNumber() {
@@ -127,7 +127,26 @@ void Lexer::scanNumber() {
     addToken(TokenType::Number, new double(stod(string(start, iterator))));
 }
 
+void Lexer::scanIdentifier() {
+    string::iterator start = iterator;
+    utf8::prior(start, this->start);
+
+    while (isAlpha(peek()) || isDigit(peek()))
+        next();
+
+    string value = string(start, iterator);
+
+    if (reserved.count(value) == 1)
+        addToken(reserved.at(value));
+    else
+        addToken(TokenType::Identifier, new string(value));
+}
+
 string Lexer::errorSignature()
 {
     return "at line " + to_string(line) + " (" + to_string(index) + ")";
+}
+
+bool Lexer::isAlpha(uint32_t ch) {
+    return (1488 <= ch && ch <= 1514) || ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z');
 }

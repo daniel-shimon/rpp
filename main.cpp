@@ -1,7 +1,6 @@
 #include "Lexer.h"
 
 #include <iostream>
-#include <map>
 
 using namespace std;
 
@@ -58,13 +57,13 @@ void setup() {
 int main() {
     setup();
 
-    string* source = new string("5 + 4 + ('hi' / 'היי')");
+    string* source = new string("או וגם אחרת שלוחם ko4ok");
     Lexer* lexer = new Lexer(source);
 
     for (Token token : lexer->scanTokens())
     {
-        if (token.type == TokenType::String)
-        {;
+        if (token.type == TokenType::String || token.type == TokenType::Identifier)
+        {
             print(*(string*)token.value);
         } else if (token.type == TokenType::Number)
         {
@@ -73,4 +72,18 @@ int main() {
 
         cout << token.type << endl;
     }
+
+//    map<string, TokenType> reserved = {
+//            {"וגם", TokenType::And},
+//            {"או", TokenType::Or},
+//            {"הגדר", TokenType::Def},
+//            {"כתוב", TokenType::Print},
+//            {"אלולא", TokenType::If},
+//            {"אחרת", TokenType::Else},
+//            {"אואם", TokenType::Elif},
+//            {"לא", TokenType::Not},
+//            {"שווהל", TokenType::Equals},
+//    };
+//    string s = "אתםףץןך";
+//    print(s);
 }
