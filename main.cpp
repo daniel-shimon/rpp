@@ -1,5 +1,4 @@
 #include "Lexer.h"
-#include "Node.h"
 
 #include <iostream>
 #include <map>
@@ -58,10 +57,9 @@ void setup() {
 
 int main() {
     setup();
-    string source = "'שלום'";
+
+    string* source = new string("5 + 4 + ('hi' / 'היי')");
     Lexer* lexer = new Lexer(source);
-    Node* root = new Node();
-    Node* currentNode = root;
 
     for (Token token : lexer->scanTokens())
     {
@@ -75,15 +73,4 @@ int main() {
 
         cout << token.type << endl;
     }
-//
-//    source = "1234";
-//    string::iterator it = source.begin();
-//    while (it < source.end())
-//    {
-//        string g = string(source.begin(), it);
-//        utf8::advance(it, 0, source.end());
-//        uint32_t c = utf8::peek_next(it, source.end());
-//        utf8::next(it, source.end());
-//        cout << (char)c << endl;
-//    }
 }

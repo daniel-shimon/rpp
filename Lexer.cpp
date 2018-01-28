@@ -3,11 +3,12 @@
 //
 #include "Lexer.h"
 
-Lexer::Lexer(string source)
+Lexer::Lexer(string* source)
 {
     this->source = source;
-    iterator = source.begin();
-    end = source.end();
+    start = source->begin();
+    iterator = start;
+    end = source->end();
 }
 
 vector<Token> Lexer::scanTokens()
@@ -111,7 +112,7 @@ bool Lexer::isDigit(uint32_t ch) {
 
 void Lexer::scanNumber() {
     string::iterator start = iterator;
-    utf8::prior(start, source.begin());
+    utf8::prior(start, this->start);
 
     while (isDigit(peek()))
         next();

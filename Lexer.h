@@ -36,8 +36,9 @@ struct Token
 
 class Lexer {
 private:
-    string source;
+    string *source;
     vector<Token> tokens;
+    string::iterator start;
     string::iterator iterator;
     string::iterator end;
     unsigned int index = 1;
@@ -52,7 +53,7 @@ private:
     string errorSignature();
 public:
 
-    explicit Lexer(string source);
+    explicit Lexer(string* source);
     vector<Token> scanTokens();
     static bool isDigit(uint32_t ch);
 };
