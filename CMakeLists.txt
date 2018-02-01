@@ -3,4 +3,4 @@ project(rshi)
 
 set(CMAKE_CXX_STANDARD 11)
 
-add_executable(rshi main.cpp Lexer.cpp Lexer.h)
+add_executable(rshi main.cpp Lexer.cpp Lexer.h Parser.cpp Parser.h)

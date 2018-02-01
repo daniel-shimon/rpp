@@ -2,8 +2,8 @@
 // Created by Dan The Man on 1/24/2018.
 //
 
-#ifndef RSHI_PARSER_H
-#define RSHI_PARSER_H
+#ifndef RSHI_LEXER_H
+#define RSHI_LEXER_H
 
 #include <string>
 #include <vector>
@@ -20,7 +20,7 @@ enum TokenType
 
     Identifier, String, Number,
 
-    And, Or, Def, Print, If, Else, Elif, Not, Equals,
+    And, Or, Def, Print, If, Else, Elif, Not, Equals, NotEquals,
 
     NewLine, EndOfFile,
 };
@@ -48,6 +48,7 @@ const map<string, TokenType> reserved = {
         {"אואם", TokenType::Elif},
         {"לא", TokenType::Not},
         {"שווהל", TokenType::Equals},
+        {"שונהמ", TokenType::NotEquals},
 };
 
 
@@ -82,4 +83,4 @@ public:
 };
 
 
-#endif //RSHI_PARSER_H
+#endif //RSHI_LEXER_H
