@@ -1,4 +1,5 @@
 #include "Lexer.h"
+#include "Parser.h"
 
 #include <iostream>
 
@@ -59,31 +60,19 @@ int main() {
 
     string* source = new string("או וגם אחרת שלוחם ko4ok");
     Lexer* lexer = new Lexer(source);
+    Parser* parser = new Parser(lexer->scanTokens());
 
-    for (Token token : lexer->scanTokens())
-    {
-        if (token.type == TokenType::String || token.type == TokenType::Identifier)
-        {
-            print(*(string*)token.value);
-        } else if (token.type == TokenType::Number)
-        {
-            cout << *(double*)token.value << endl;
-        }
-
-        cout << token.type << endl;
-    }
-
-//    map<string, TokenType> reserved = {
-//            {"וגם", TokenType::And},
-//            {"או", TokenType::Or},
-//            {"הגדר", TokenType::Def},
-//            {"כתוב", TokenType::Print},
-//            {"אלולא", TokenType::If},
-//            {"אחרת", TokenType::Else},
-//            {"אואם", TokenType::Elif},
-//            {"לא", TokenType::Not},
-//            {"שווהל", TokenType::Equals},
-//    };
-//    string s = "אתםףץןך";
-//    print(s);
+//    for (Token token : lexer->scanTokens())
+//    {
+//        if (token.type == TokenType::String || token.type == TokenType::Identifier)
+//        {
+//            print(*(string*)token.value);
+//        } else if (token.type == TokenType::Number)
+//        {
+//            cout << *(double*)token.value << endl;
+//        }
+//
+//        cout << token.type << endl;
+//    }
+    
 }
