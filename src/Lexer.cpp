@@ -11,18 +11,23 @@ Lexer::Lexer(string* source)
     end = source->end();
 }
 
-vector<Token> Lexer::scanTokens()
+vector<Token> Lexer::scan()
 {
     while (iterator < end)
     {
         uint32_t ch = next();
         switch (ch)
         {
-            case '(': addToken(TokenType::LeftParen); break;
-            case ')': addToken(TokenType::RightParen); break;
+            case '(': addToken(TokenType::RightParen); break;
+            case ')': addToken(TokenType::LeftParen); break;
             case '+': addToken(TokenType::Plus); break;
             case '-': addToken(TokenType::Minus); break;
-            case '*': addToken(TokenType::Multiply); break;
+            case '*':
+                if (nextMatches('*'))
+                    addToken(TokenType::Power);
+                else
+                    addToken(TokenType::Multiply);
+                break;
             case '/':
                 if (nextMatches('/'))
                 {
@@ -106,7 +111,7 @@ void Lexer::scanString(char delimiter) {
     }
 
     string* value = new string(start, iterator);
-    addToken(TokenType::String, value);
+    addToken(TokenType::StringLiteral, value);
     next();
 }
 
@@ -124,7 +129,7 @@ void Lexer::scanNumber() {
             next();
     }
 
-    addToken(TokenType::Number, new double(stod(string(start, iterator))));
+    addToken(TokenType::NumberLiteral, new double(stod(string(start, iterator))));
 }
 
 void Lexer::scanIdentifier() {

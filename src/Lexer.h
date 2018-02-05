@@ -10,7 +10,7 @@
 #include <map>
 #include <stdexcept>
 
-#include "utf8.h"
+#include "../utf8.h"
 
 using namespace std;
 
@@ -18,9 +18,11 @@ enum TokenType
 {
     RightParen, LeftParen, Plus, Minus, Divide, Multiply,
 
-    Identifier, String, Number,
+    Identifier, StringLiteral, NumberLiteral, False, True, None,
 
-    And, Or, Def, Print, If, Else, Elif, Not, Equals, NotEquals,
+    And, Or, Def, Print, If, Else, Elif, Not, Equals, NotEquals, Power,
+
+    Bigger, Smaller, BiggerEq, SmallerEq,
 
     NewLine, EndOfFile,
 };
@@ -49,6 +51,15 @@ const map<string, TokenType> reserved = {
         {"לא", TokenType::Not},
         {"שווהל", TokenType::Equals},
         {"שונהמ", TokenType::NotEquals},
+        {"גדולמ", TokenType::Bigger},
+        {">", TokenType::Bigger},
+        {"<", TokenType::Smaller},
+        {"קטןמ", TokenType::Smaller},
+        {">=", TokenType::BiggerEq},
+        {"<=", TokenType::SmallerEq},
+        {"שלילי", TokenType::False},
+        {"חיובי", TokenType::True},
+        {"ריק", TokenType::None},
 };
 
 
@@ -79,7 +90,7 @@ private:
 
 public:
     explicit Lexer(string* source);
-    vector<Token> scanTokens();
+    vector<Token> scan();
 };
 
 

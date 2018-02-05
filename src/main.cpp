@@ -1,5 +1,6 @@
 #include "Lexer.h"
 #include "Parser.h"
+#include "Interpreter.h"
 
 #include <iostream>
 
@@ -55,24 +56,21 @@ void setup() {
     hebrew[utf8::next(it, alphabet.end())] = "j";
 }
 
-int main() {
+int main(int arg_c, char** arg_v) {
     setup();
 
-    string* source = new string("או וגם אחרת שלוחם ko4ok");
-    Lexer* lexer = new Lexer(source);
-    Parser* parser = new Parser(lexer->scanTokens());
+    string* source;
+    if (arg_c <= 1)
+        source = new string("'שלום ' + 'לכולם'");
+    else
+        source = new string(arg_v[1]);
 
-//    for (Token token : lexer->scanTokens())
-//    {
-//        if (token.type == TokenType::String || token.type == TokenType::Identifier)
-//        {
-//            print(*(string*)token.value);
-//        } else if (token.type == TokenType::Number)
-//        {
-//            cout << *(double*)token.value << endl;
-//        }
-//
-//        cout << token.type << endl;
-//    }
-    
+    Lexer* lexer = new Lexer(source);
+    Parser* parser = new Parser(lexer->scan());
+    Interpreter* interpreter = new Interpreter();
+
+    Value* value = interpreter->evaluate(parser->parse());
+
+    print(value->getString());
+
 }

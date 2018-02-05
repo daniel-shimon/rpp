@@ -4,22 +4,60 @@
 
 #include "Parser.h"
 
-Expression Parser::expression() {
+Expression* Parser::expression() {
     return equality();
 }
 
-Expression Parser::equality() {
-    // equality = comparison ( ("שונהמ" | "שווהל") comparison )*
-    Expression expression = comparison();
+Expression* Parser::equality()
+{
+    return parseBinary(this->comparison, {Equals, NotEquals});
+}
 
-    while(peekMatch({TokenType::NotEquals, TokenType::Equals}))
+Expression* Parser::comparison()
+{
+    return parseBinary(this->addition, {Bigger, Smaller, BiggerEq, SmallerEq});
+}
+
+
+Expression* Parser::addition()
+{
+    return parseBinary(this->multiplication, {Plus, Minus});
+}
+
+Expression* Parser::multiplication() {
+    return parseBinary(this->power, {Divide, Multiply});
+}
+
+Expression* Parser::power() {
+    return parseBinary(this->unary, {Power});
+}
+
+Expression* Parser::unary() {
+    if (peekMatch({Not, Minus}))
     {
         Token op = next();
-        Expression right = comparison();
-        expression = Expression::Binary(expression, op, right);
+        Expression* expression = unary();
+        return new Unary(op, expression);
     }
 
-    return expression;
+    return primary();
+}
+
+Expression* Parser::primary() {
+    if (peekMatch({False, True, None, StringLiteral, NumberLiteral}))
+    {
+        return new Literal(next());
+    }
+
+    if (nextMatch(RightParen))
+    {
+        Expression* value = expression();
+        if (nextMatch(LeftParen))
+            return new Grouping(value);
+
+        Token token = next();
+        throw runtime_error("missing '(' at line " + to_string(token.line) + " (" + to_string(token.index) + ")");
+    }
 }
 
 Token Parser::next() {
@@ -52,4 +90,50 @@ bool Parser::check(TokenType type) {
 
 bool Parser::isAtEnd() {
     return peek().type == TokenType::EndOfFile;
+}
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wincompatible-pointer-types"
+Expression* Parser::parseBinary(Expression* (Parser::*parseFunction)(), initializer_list<TokenType> typesList) {
+    Expression* expression = (this->*parseFunction)();
+
+    while(peekMatch(typesList))
+    {
+        Token op = next();
+        Expression* second = (this->*parseFunction)();
+        expression = new Binary(expression, op, second);
+    }
+
+    return expression;
+}
+#pragma clang diagnostic pop
+
+bool Parser::nextMatch(TokenType type) {
+    if (check(type))
+    {
+        next();
+        return true;
+    }
+
+    return false;
+}
+
+Expression* Parser::parse() {
+    return expression();
+}
+
+Value* Grouping::accept(Visitor *Visitor) {
+    return Visitor->evaluateGrouping(this);
+}
+
+Value* Literal::accept(Visitor *Visitor) {
+    return Visitor->evaluateLiteral(this);
+}
+
+Value* Unary::accept(Visitor *Visitor) {
+    return Visitor->evaluateUnary(this);
+}
+
+Value* Binary::accept(Visitor *Visitor) {
+    return Visitor->evaluateBinary(this);
 }
