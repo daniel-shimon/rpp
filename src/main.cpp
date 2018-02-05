@@ -8,20 +8,37 @@ using namespace std;
 
 map<uint32_t, string> hebrew;
 
-void print(string s)
+void print(Value* value)
 {
-    string::iterator it = s.begin();
-    while (it != s.end()) {
-        string::iterator prev = it;
-        uint32_t ch = utf8::next(it, s.end());
-        if (hebrew[ch].empty())
+    switch (value->type)
+    {
+        case String:
         {
-            cout << string(prev, it);
+            string s = value->getString();
+            string::iterator it = s.begin();
+            while (it != s.end()) {
+                string::iterator prev = it;
+                uint32_t ch = utf8::next(it, s.end());
+                if (hebrew[ch].empty())
+                {
+                    cout << string(prev, it);
+                }
+                else
+                    cout << hebrew[ch];
+            }
+            cout << endl;
+            break;
         }
-        else
-            cout << hebrew[ch];
+        case Number:
+            cout << value->getNumber();
+            break;
+        case Bool:
+            cout << value->getBool() ? "True" : "False";
+            break;
+        case NoneType:
+            cout << "None";
+            break;
     }
-    cout << endl;
 }
 
 void setup() {
@@ -61,7 +78,7 @@ int main(int arg_c, char** arg_v) {
 
     string* source;
     if (arg_c <= 1)
-        source = new string("'שלום ' + 'לכולם'");
+        source = new string("'לכולם' שווהל 'לכולם'");
     else
         source = new string(arg_v[1]);
 
@@ -71,6 +88,5 @@ int main(int arg_c, char** arg_v) {
 
     Value* value = interpreter->evaluate(parser->parse());
 
-    print(value->getString());
-
+    print(value);
 }
