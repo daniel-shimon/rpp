@@ -20,27 +20,27 @@ class Binary: public Expression
 {
 public:
     Expression* first;
-    Token op;
+    Token* op;
     Expression* second;
 
-    Binary(Expression* first, Token op, Expression* second) : first(first), op(op), second(second) {};
+    Binary(Expression* first, Token* op, Expression* second) : first(first), op(op), second(second) {};
     Value* accept(Visitor* Visitor);
 };
 class Unary: public Expression
 {
 public:
-    Token op;
+    Token* op;
     Expression* expression;
 
-    Unary(Token op, Expression* expression) : op(op), expression(expression) {};
+    Unary(Token* op, Expression* expression) : op(op), expression(expression) {};
     Value* accept(Visitor* Visitor);
 };
 class Literal: public Expression
 {
 public:
-    Token token;
+    Token* token;
 
-    Literal(Token token) : token(token) {};
+    Literal(Token* token) : token(token) {};
     Value* accept(Visitor* Visitor);
 };
 class Grouping: public Expression
@@ -52,7 +52,8 @@ public:
     Value* accept(Visitor* Visitor);
 };
 
-class Visitor {
+class Visitor
+{
 public:
     virtual Value* evaluate(Expression* expression) = 0;
     virtual Value* evaluateBinary(Binary* binary) = 0;
@@ -61,10 +62,10 @@ public:
     virtual Value* evaluateGrouping(Grouping* grouping) = 0;
 };
 
-
-class Parser {
+class Parser
+{
 private:
-    vector<Token> tokens;
+    vector<Token*> tokens;
     int current = 0;
 
     Expression* expression();
@@ -76,16 +77,17 @@ private:
     Expression* unary();
     Expression* primary();
 
-    Token next();
-    Token peek();
+    Token* next();
+    Token* peek();
     bool nextMatch(TokenType type);
     bool isAtEnd();
     bool check(TokenType type);
     bool peekMatch(initializer_list<TokenType> types);
+    void syntaxError(string message);
 
     Expression* parseBinary(Expression* (Parser::*parseFunction)(), initializer_list<TokenType> typesList);
 public:
-    Parser(vector<Token> tokens): tokens(tokens) {};
+    Parser(vector<Token*> tokens): tokens(tokens) {};
     Expression* parse();
 };
 

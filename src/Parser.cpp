@@ -4,7 +4,8 @@
 
 #include "Parser.h"
 
-Expression* Parser::expression() {
+Expression* Parser::expression()
+{
     return equality();
 }
 
@@ -18,24 +19,26 @@ Expression* Parser::comparison()
     return parseBinary(this->addition, {Bigger, Smaller, BiggerEq, SmallerEq});
 }
 
-
 Expression* Parser::addition()
 {
     return parseBinary(this->multiplication, {Plus, Minus});
 }
 
-Expression* Parser::multiplication() {
-    return parseBinary(this->power, {Divide, Multiply});
+Expression* Parser::multiplication()
+{
+    return parseBinary(this->power, {Divide, Multiply, Modulo});
 }
 
-Expression* Parser::power() {
+Expression* Parser::power()
+{
     return parseBinary(this->unary, {Power});
 }
 
-Expression* Parser::unary() {
+Expression* Parser::unary()
+{
     if (peekMatch({Not, Minus}))
     {
-        Token op = next();
+        Token* op = next();
         Expression* expression = unary();
         return new Unary(op, expression);
     }
@@ -43,7 +46,8 @@ Expression* Parser::unary() {
     return primary();
 }
 
-Expression* Parser::primary() {
+Expression* Parser::primary()
+{
     if (peekMatch({False, True, None, StringLiteral, NumberLiteral}))
     {
         return new Literal(next());
@@ -55,24 +59,24 @@ Expression* Parser::primary() {
         if (nextMatch(LeftParen))
             return new Grouping(value);
 
-        Token token = next();
-        throw runtime_error("missing '(' at line " + to_string(token.line) + " (" + to_string(token.index) + ")");
+        syntaxError("missing (");
     }
+
+    syntaxError("unsupported symbol");
 }
 
-Token Parser::next() {
-    Token token = tokens[current];
+Token* Parser::next() {
+    Token* token = tokens[current];
     current++;
     return token;
 }
 
-Token Parser::peek() {
+Token* Parser::peek() {
     return tokens[current];
 }
 
 bool Parser::peekMatch(initializer_list<TokenType> typesList) {
     vector<TokenType> types = vector<TokenType>(typesList.begin(), typesList.end());
-    Token token = peek();
 
     for (TokenType type : types)
         if (check(type))
@@ -85,11 +89,11 @@ bool Parser::check(TokenType type) {
     if (isAtEnd())
         return false;
 
-    return (peek().type == type);
+    return (peek()->type == type);
 }
 
 bool Parser::isAtEnd() {
-    return peek().type == TokenType::EndOfFile;
+    return peek()->type == EndOfFile;
 }
 
 #pragma clang diagnostic push
@@ -99,7 +103,7 @@ Expression* Parser::parseBinary(Expression* (Parser::*parseFunction)(), initiali
 
     while(peekMatch(typesList))
     {
-        Token op = next();
+        Token* op = next();
         Expression* second = (this->*parseFunction)();
         expression = new Binary(expression, op, second);
     }
@@ -120,6 +124,10 @@ bool Parser::nextMatch(TokenType type) {
 
 Expression* Parser::parse() {
     return expression();
+}
+
+void Parser::syntaxError(string message) {
+    throw RPPException("Syntax Error", tokens[current]->errorSignature(), message);
 }
 
 Value* Grouping::accept(Visitor *Visitor) {

@@ -5,28 +5,29 @@
 
 Lexer::Lexer(string* source)
 {
-    this->source = source;
     start = source->begin();
     iterator = start;
     end = source->end();
 }
 
-vector<Token> Lexer::scan()
+vector<Token*> Lexer::scan()
 {
     while (iterator < end)
     {
         uint32_t ch = next();
         switch (ch)
         {
-            case '(': addToken(TokenType::RightParen); break;
-            case ')': addToken(TokenType::LeftParen); break;
-            case '+': addToken(TokenType::Plus); break;
-            case '-': addToken(TokenType::Minus); break;
+            case '(': addToken(RightParen, "("); break;
+            case ')': addToken(LeftParen, ")"); break;
+            case '+': addToken(Plus, "+"); break;
+            case '-': addToken(Minus, "-"); break;
+            case '>': addToken(Bigger, ">"); break;
+            case '%': addToken(Modulo, "%"); break;
             case '*':
                 if (nextMatches('*'))
-                    addToken(TokenType::Power);
+                    addToken(Power, "**");
                 else
-                    addToken(TokenType::Multiply);
+                    addToken(Multiply, "*");
                 break;
             case '/':
                 if (nextMatches('/'))
@@ -35,7 +36,19 @@ vector<Token> Lexer::scan()
                         next();
                 }
                 else
-                    addToken(TokenType::Divide);
+                    addToken(Divide, "/");
+                break;
+            case '<':
+                if (nextMatches('='))
+                    addToken(SmallerEq, "<=");
+                else
+                    addToken(Smaller, "<");
+                break;
+            case '=':
+                if (nextMatches('>'))
+                    addToken(BiggerEq, "=>");
+                else
+                    addToken(Assign, "=");
                 break;
             case '\r':
             case ' ':
@@ -43,7 +56,7 @@ vector<Token> Lexer::scan()
             case '\n':
                 line++;
                 index = 1;
-                addToken(TokenType::NewLine);
+                addToken(NewLine, "");
                 break;
             case '"':
                 scanString();
@@ -57,16 +70,16 @@ vector<Token> Lexer::scan()
                 else if (isAlpha(ch))
                     scanIdentifier();
                 else
-                    throw runtime_error("Unexpected Character " + errorSignature() + " : " + (char)ch);
+                    throw RPPException("Unexpected Character", Token::errorSignature(line, index), string(1, (char)ch));
         }
     }
 
-    addToken(TokenType::EndOfFile);
+    addToken(EndOfFile, "");
     return tokens;
 }
 
-void Lexer::addToken(TokenType type, void* value) {
-    tokens.emplace_back(Token(type, "", value, line, index));
+void Lexer::addToken(TokenType type, string lexeme, void* value) {
+    tokens.emplace_back(new Token(type, lexeme, value, line, index));
 }
 
 bool Lexer::isAtEnd() {
@@ -74,6 +87,7 @@ bool Lexer::isAtEnd() {
 }
 
 uint32_t Lexer::next() {
+    index++;
     return utf8::next(iterator, end);
 }
 
@@ -107,11 +121,11 @@ void Lexer::scanString(char delimiter) {
     while (peek() != delimiter)
     {
         if (isAtEnd() or next() == '\n')
-            throw runtime_error("Unterminated string " + errorSignature());
+            throw RPPException("Unterminated string", Token::errorSignature(line, index, string(start, iterator)));
     }
 
     string* value = new string(start, iterator);
-    addToken(TokenType::StringLiteral, value);
+    addToken(StringLiteral, *value, value);
     next();
 }
 
@@ -129,7 +143,8 @@ void Lexer::scanNumber() {
             next();
     }
 
-    addToken(TokenType::NumberLiteral, new double(stod(string(start, iterator))));
+    string numberString = string(start, iterator);
+    addToken(NumberLiteral, numberString, new double(stod(numberString)));
 }
 
 void Lexer::scanIdentifier() {
@@ -142,16 +157,26 @@ void Lexer::scanIdentifier() {
     string value = string(start, iterator);
 
     if (reserved.count(value) == 1)
-        addToken(reserved.at(value));
+        addToken(reserved.at(value), value);
     else
-        addToken(TokenType::Identifier, new string(value));
+        addToken(Identifier, value, new string(value));
 }
 
-string Lexer::errorSignature()
+string Token::errorSignature()
 {
-    return "at line " + to_string(line) + " (" + to_string(index) + ")";
+    return Token::errorSignature(line, index, lexeme);
+}
+
+string Token::errorSignature(int line, int index, string lexeme) {
+    return "at line " + to_string(line) + " index " + to_string(index) + " (" + lexeme + ")";
 }
 
 bool Lexer::isAlpha(uint32_t ch) {
     return (1488 <= ch && ch <= 1514) || ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z');
+}
+
+const char *RPPException::what() const throw() {
+    if (message.empty())
+        return (new string(type + " " + signature))->c_str();
+    return (new string(type + " " + signature + ": " + message))->c_str();
 }

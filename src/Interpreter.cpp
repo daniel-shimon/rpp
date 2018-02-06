@@ -9,7 +9,7 @@ Value* Interpreter::evaluate(Expression* expression) {
 }
 
 Value* Interpreter::evaluateLiteral(Literal* literal) {
-    switch (literal->token.type)
+    switch (literal->token->type)
     {
         case False:
             return new Value(Bool, (void*)false);
@@ -18,12 +18,12 @@ Value* Interpreter::evaluateLiteral(Literal* literal) {
         case None:
             return new Value(NoneType, nullptr);
         case StringLiteral:
-            return new Value(String, literal->token.value);
+            return new Value(String, literal->token->value);
         case NumberLiteral:
-            return new Value(Number, literal->token.value);
+            return new Value(Number, literal->token->value);
     }
 
-    return nullptr;
+    runtimeError(literal->token, "unsupported literal");
 }
 
 Value* Interpreter::evaluateGrouping(Grouping *grouping) {
@@ -32,8 +32,9 @@ Value* Interpreter::evaluateGrouping(Grouping *grouping) {
 
 Value* Interpreter::evaluateUnary(Unary *unary) {
     Value* value = evaluate(unary->expression);
+    value->token = unary->op;
 
-    switch (unary->op.type)
+    switch (unary->op->type)
     {
         case Not:
             return new Value(Bool, (void*)!truthEvaluation(value));
@@ -41,7 +42,7 @@ Value* Interpreter::evaluateUnary(Unary *unary) {
             return new Value(Number, new double(-value->getNumber()));
     }
 
-    return nullptr;
+    runtimeError(unary->op, "unsupported operator");
 }
 
 bool Interpreter::truthEvaluation(Value* value) {
@@ -50,9 +51,11 @@ bool Interpreter::truthEvaluation(Value* value) {
 
 Value* Interpreter::evaluateBinary(Binary *binary) {
     Value* first = evaluate(binary->first);
+    first->token = binary->op;
     Value* second = evaluate(binary->second);
+    second->token = binary->op;
 
-    switch (binary->op.type)
+    switch (binary->op->type)
     {
         case Equals:
             return new Value(Bool, (void*)equalityEvaluation(first, second));
@@ -77,12 +80,33 @@ Value* Interpreter::evaluateBinary(Binary *binary) {
         case Divide:
             return new Value(Number, new double(first->getNumber() / second->getNumber()));
         case Multiply:
-            return new Value(Number, new double(first->getNumber() * second->getNumber()));
+            if (first->type == Number && second->type == Number)
+                return new Value(Number, new double(first->getNumber() * second->getNumber()));
+            if ((first->type == String && second->type == Number) || (first->type == Number && second->type == String))
+            {
+                string repeat;
+                int count;
+                if (first->type == String && second->type == Number)
+                {
+                    repeat = first->getString();
+                    count = (int) second->getNumber();
+                } else
+                {
+                    repeat = second->getString();
+                    count = (int) first->getNumber();
+                }
+                string value = "";
+                for (; count > 0; count--)
+                    value += repeat;
+                return new Value(String, new string(value));
+            }
         case Power:
             return new Value(Number, new double(pow(first->getNumber(), second->getNumber())));
+        case Modulo:
+            return new Value(Number, new double((int) first->getNumber() % (int) second->getNumber()));
     }
 
-    return nullptr;
+    runtimeError(binary->op, "unsupported operator");
 }
 
 bool Interpreter::equalityEvaluation(Value* first, Value* second) {
@@ -100,14 +124,24 @@ bool Interpreter::equalityEvaluation(Value* first, Value* second) {
     return false;
 }
 
+void Interpreter::runtimeError(Token* token, string message) {
+    throw RPPException("Runtime Error", token->errorSignature(), message);
+}
+
 double Value::getNumber() {
+    if (type != Number)
+        Interpreter::runtimeError(token, "value is not a Number");
     return *(double*)value;
 }
 
 bool Value::getBool() {
+    if (type != Bool)
+        Interpreter::runtimeError(token, "value is not a Bool");
     return (bool)value;
 }
 
 string Value::getString() {
+    if (type != String)
+        Interpreter::runtimeError(token, "value is not a String");
     return *(string*)value;
 }

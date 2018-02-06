@@ -8,27 +8,28 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <stdexcept>
+#include <exception>
 
-#include "../utf8.h"
+#include "utf8.h"
 
 using namespace std;
 
 enum TokenType
 {
-    RightParen, LeftParen, Plus, Minus, Divide, Multiply,
+    RightParen, LeftParen, Plus, Minus, Divide, Multiply, Modulo,
 
     Identifier, StringLiteral, NumberLiteral, False, True, None,
 
     And, Or, Def, Print, If, Else, Elif, Not, Equals, NotEquals, Power,
 
-    Bigger, Smaller, BiggerEq, SmallerEq,
+    Bigger, Smaller, BiggerEq, SmallerEq, Assign,
 
     NewLine, EndOfFile,
 };
 
-struct Token
+class Token
 {
+public:
     string lexeme;
     TokenType type;
     void* value;
@@ -37,42 +38,51 @@ struct Token
 
     Token(TokenType type, string lexeme, void* value, unsigned int line, unsigned int index) :
             lexeme(std::move(lexeme)), type(type), value(value), line(line), index(index) {}
+    string errorSignature();
+    static string errorSignature(int line, int index, string lexeme = "");
 };
 
+class RPPException : public exception
+{
+private:
+    string type;
+    string signature;
+    string message;
+public:
+    RPPException(string type, string signature, string message = "") :
+            type(type), signature(signature), message(message) {};
+    virtual const char* what() const throw();
+};
 
+//region Reserved
 const map<string, TokenType> reserved = {
-        {"וגם", TokenType::And},
-        {"או", TokenType::Or},
-        {"הגדר", TokenType::Def},
-        {"כתוב", TokenType::Print},
-        {"אלולא", TokenType::If},
-        {"אחרת", TokenType::Else},
-        {"אואם", TokenType::Elif},
-        {"לא", TokenType::Not},
-        {"שווהל", TokenType::Equals},
-        {"שונהמ", TokenType::NotEquals},
-        {"גדולמ", TokenType::Bigger},
-        {">", TokenType::Bigger},
-        {"<", TokenType::Smaller},
-        {"קטןמ", TokenType::Smaller},
-        {">=", TokenType::BiggerEq},
-        {"<=", TokenType::SmallerEq},
-        {"שלילי", TokenType::False},
-        {"חיובי", TokenType::True},
-        {"ריק", TokenType::None},
+        {"וגם", And},
+        {"או", Or},
+        {"הגדר", Def},
+        {"כתוב", Print},
+        {"אלולא", If},
+        {"אחרת", Else},
+        {"אואם", Elif},
+        {"לא", Not},
+        {"שווהל", Equals},
+        {"שונהמ", NotEquals},
+        {"גדולמ", Bigger},
+        {"קטןמ", Smaller},
+        {"שלילי", False},
+        {"חיובי", True},
+        {"ריק", None},
 };
-
+//endregion
 
 class Lexer {
 private:
-    string *source;
-    vector<Token> tokens;
+    vector<Token*> tokens;
     string::iterator start;
     string::iterator iterator;
     string::iterator end;
     unsigned int index = 1;
     unsigned int line = 1;
-    void addToken(TokenType type, void* value = nullptr);
+    void addToken(TokenType type, string lexeme, void* value = nullptr);
 
     bool isAtEnd();
     uint32_t next();
@@ -86,11 +96,9 @@ private:
     void scanNumber();
     void scanIdentifier();
 
-    string errorSignature();
-
 public:
     explicit Lexer(string* source);
-    vector<Token> scan();
+    vector<Token*> scan();
 };
 
 

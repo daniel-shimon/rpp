@@ -18,6 +18,7 @@ class Value
 {
 public:
     ValueType type;
+    Token* token = nullptr;
     void* value;
 
     Value(ValueType type, void* value): type(type), value(value) {};
@@ -29,6 +30,7 @@ public:
 class Interpreter : Visitor {
 private:
     bool truthEvaluation(Value* value);
+    bool equalityEvaluation(Value *first, Value *second);
 public:
     Interpreter() {};
     Value* evaluate(Expression* expression);
@@ -36,8 +38,7 @@ public:
     Value* evaluateUnary(Unary* unary);
     Value* evaluateLiteral(Literal* literal);
     Value* evaluateGrouping(Grouping* grouping);
-
-    bool equalityEvaluation(Value *first, Value *second);
+    static void runtimeError(Token* token, string message);
 };
 
 

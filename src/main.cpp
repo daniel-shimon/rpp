@@ -3,6 +3,8 @@
 #include "Interpreter.h"
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -33,8 +35,11 @@ void print(Value* value)
             cout << value->getNumber();
             break;
         case Bool:
-            cout << value->getBool() ? "True" : "False";
+        {
+            string v = value->getBool() ? "True" : "False";
+            cout << v;
             break;
+        }
         case NoneType:
             cout << "None";
             break;
@@ -73,20 +78,41 @@ void setup() {
     hebrew[utf8::next(it, alphabet.end())] = "j";
 }
 
-int main(int arg_c, char** arg_v) {
+int main(int argC, char** argV) {
+    string* source;
+    if (argC <= 1)
+        source = new string("12%10");
+    else if (argC == 2)
+    {
+        ifstream file(argV[1]);
+        stringstream buffer;
+        buffer << file.rdbuf();
+        source = new string(buffer.str());
+    }
+    else if (argC == 3 && string(argV[1]) == "-c")
+        source = new string(argV[2]);
+    else
+    {
+        cout << "usage:" << endl << "\trpp path" << endl << "\trpp -c code" << endl;
+        return 1;
+    }
+
     setup();
 
-    string* source;
-    if (arg_c <= 1)
-        source = new string("'לכולם' שווהל 'לכולם'");
-    else
-        source = new string(arg_v[1]);
+    try
+    {
+        Lexer *lexer = new Lexer(source);
+        Parser *parser = new Parser(lexer->scan());
+        Interpreter *interpreter = new Interpreter();
 
-    Lexer* lexer = new Lexer(source);
-    Parser* parser = new Parser(lexer->scan());
-    Interpreter* interpreter = new Interpreter();
+        Value *value = interpreter->evaluate(parser->parse());
 
-    Value* value = interpreter->evaluate(parser->parse());
+        print(value);
+    } catch (RPPException exception)
+    {
+        cout << exception.what() << endl;
+        return 1;
+    }
 
-    print(value);
+    return 0;
 }
