@@ -23,6 +23,7 @@ vector<Token*> Lexer::scan()
             case '-': addToken(Minus, "-"); break;
             case '>': addToken(Bigger, ">"); break;
             case '%': addToken(Modulo, "%"); break;
+            case ';': addToken(Semicolon, ";"); break;
             case '*':
                 if (nextMatches('*'))
                     addToken(Power, "**");

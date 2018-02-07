@@ -7,59 +7,91 @@
 
 #include "Lexer.h"
 
-class Visitor;
+class ExpressionVisitor;
+class StatementVisitor;
 class Value;
 
 class Expression
 {
 public:
-    virtual Value* accept(Visitor* Visitor) {};
+    virtual Value* accept(ExpressionVisitor* visitor) = 0;
 };
 
-class Binary: public Expression
+class BinaryExpression: public Expression
 {
 public:
     Expression* first;
     Token* op;
     Expression* second;
 
-    Binary(Expression* first, Token* op, Expression* second) : first(first), op(op), second(second) {};
-    Value* accept(Visitor* Visitor);
+    BinaryExpression(Expression* first, Token* op, Expression* second) : first(first), op(op), second(second) {};
+    Value* accept(ExpressionVisitor* visitor);
 };
-class Unary: public Expression
+class UnaryExpression: public Expression
 {
 public:
     Token* op;
     Expression* expression;
 
-    Unary(Token* op, Expression* expression) : op(op), expression(expression) {};
-    Value* accept(Visitor* Visitor);
+    UnaryExpression(Token* op, Expression* expression) : op(op), expression(expression) {};
+    Value* accept(ExpressionVisitor* visitor);
 };
-class Literal: public Expression
+class LiteralExpression: public Expression
 {
 public:
     Token* token;
 
-    Literal(Token* token) : token(token) {};
-    Value* accept(Visitor* Visitor);
+    LiteralExpression(Token* token) : token(token) {};
+    Value* accept(ExpressionVisitor* visitor);
 };
-class Grouping: public Expression
+class GroupingExpression: public Expression
 {
 public:
     Expression* value;
 
-    Grouping(Expression* value) : value(value) {};
-    Value* accept(Visitor* Visitor);
+    GroupingExpression(Expression* value) : value(value) {};
+    Value* accept(ExpressionVisitor* visitor);
 };
 
-class Visitor
+class Statement
+{
+public:
+    virtual void accept(StatementVisitor* visitor) = 0;
+};
+
+class ExpressionStatement : public Statement
+{
+public:
+    Expression* expression;
+
+    ExpressionStatement(Expression* expression): expression(expression) {};
+    void accept(StatementVisitor* visitor);
+};
+
+class PrintStatement : public Statement
+{
+public:
+    Expression* expression;
+
+    PrintStatement(Expression* expression): expression(expression) {};
+    void accept(StatementVisitor* visitor);
+};
+
+class ExpressionVisitor
 {
 public:
     virtual Value* evaluate(Expression* expression) = 0;
-    virtual Value* evaluateBinary(Binary* binary) = 0;
-    virtual Value* evaluateUnary(Unary* unary) = 0;
-    virtual Value* evaluateLiteral(Literal* literal) = 0;
-    virtual Value* evaluateGrouping(Grouping* grouping) = 0;
+    virtual Value* evaluateBinary(BinaryExpression* binary) = 0;
+    virtual Value* evaluateUnary(UnaryExpression* unary) = 0;
+    virtual Value* evaluateLiteral(LiteralExpression* literal) = 0;
+    virtual Value* evaluateGrouping(GroupingExpression* grouping) = 0;
+};
+
+class StatementVisitor
+{
+public:
+    virtual void executeExpression(ExpressionStatement* statement) = 0;
+    virtual void executePrint(PrintStatement* statement) = 0;
 };
 
 class Parser
@@ -77,6 +109,9 @@ private:
     Expression* unary();
     Expression* primary();
 
+    Statement* statement();
+    Statement* printStatement();
+
     Token* next();
     Token* peek();
     bool nextMatch(TokenType type);
@@ -88,7 +123,9 @@ private:
     Expression* parseBinary(Expression* (Parser::*parseFunction)(), initializer_list<TokenType> typesList);
 public:
     Parser(vector<Token*> tokens): tokens(tokens) {};
-    Expression* parse();
+    vector<Statement*> parse();
+
+    ExpressionStatement *expressionStatement();
 };
 
 

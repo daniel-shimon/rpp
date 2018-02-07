@@ -40,7 +40,7 @@ Expression* Parser::unary()
     {
         Token* op = next();
         Expression* expression = unary();
-        return new Unary(op, expression);
+        return new UnaryExpression(op, expression);
     }
 
     return primary();
@@ -50,14 +50,14 @@ Expression* Parser::primary()
 {
     if (peekMatch({False, True, None, StringLiteral, NumberLiteral}))
     {
-        return new Literal(next());
+        return new LiteralExpression(next());
     }
 
     if (nextMatch(RightParen))
     {
         Expression* value = expression();
         if (nextMatch(LeftParen))
-            return new Grouping(value);
+            return new GroupingExpression(value);
 
         syntaxError("missing (");
     }
@@ -105,7 +105,7 @@ Expression* Parser::parseBinary(Expression* (Parser::*parseFunction)(), initiali
     {
         Token* op = next();
         Expression* second = (this->*parseFunction)();
-        expression = new Binary(expression, op, second);
+        expression = new BinaryExpression(expression, op, second);
     }
 
     return expression;
@@ -122,26 +122,64 @@ bool Parser::nextMatch(TokenType type) {
     return false;
 }
 
-Expression* Parser::parse() {
-    return expression();
+vector<Statement*> Parser::parse() {
+    vector<Statement*> statements;
+
+    while (!isAtEnd())
+    {
+        while(nextMatch(NewLine)) {}
+        statements.push_back(statement());
+        if (peekMatch({Semicolon, NewLine}))
+            next();
+        else if (isAtEnd())
+            break;
+        else
+            syntaxError("Unexpected symbol");
+    }
+
+    return statements;
 }
 
 void Parser::syntaxError(string message) {
     throw RPPException("Syntax Error", tokens[current]->errorSignature(), message);
 }
 
-Value* Grouping::accept(Visitor *Visitor) {
-    return Visitor->evaluateGrouping(this);
+Statement *Parser::statement() {
+    if (nextMatch(Print))
+        return printStatement();
+
+    return expressionStatement();
 }
 
-Value* Literal::accept(Visitor *Visitor) {
-    return Visitor->evaluateLiteral(this);
+ExpressionStatement *Parser::expressionStatement()
+{
+    return new ExpressionStatement(expression());
 }
 
-Value* Unary::accept(Visitor *Visitor) {
-    return Visitor->evaluateUnary(this);
+Statement *Parser::printStatement() {
+    return new PrintStatement(expression());
 }
 
-Value* Binary::accept(Visitor *Visitor) {
-    return Visitor->evaluateBinary(this);
+Value* GroupingExpression::accept(ExpressionVisitor* visitor) {
+    return visitor->evaluateGrouping(this);
+}
+
+Value* LiteralExpression::accept(ExpressionVisitor* visitor) {
+    return visitor->evaluateLiteral(this);
+}
+
+Value* UnaryExpression::accept(ExpressionVisitor* visitor) {
+    return visitor->evaluateUnary(this);
+}
+
+Value* BinaryExpression::accept(ExpressionVisitor* visitor) {
+    return visitor->evaluateBinary(this);
+}
+
+void ExpressionStatement::accept(StatementVisitor* visitor) {
+    visitor->executeExpression(this);
+}
+
+void PrintStatement::accept(StatementVisitor *visitor) {
+    visitor->executePrint(this);
 }

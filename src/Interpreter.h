@@ -6,6 +6,7 @@
 #define RSHI_INTERPRETER_H
 
 #include <math.h>
+#include <iostream>
 
 #include "Parser.h"
 
@@ -17,9 +18,9 @@ enum ValueType
 class Value
 {
 public:
+    void* value;
     ValueType type;
     Token* token = nullptr;
-    void* value;
 
     Value(ValueType type, void* value): type(type), value(value) {};
     double getNumber();
@@ -27,18 +28,27 @@ public:
     string getString();
 };
 
-class Interpreter : Visitor {
+class Interpreter : ExpressionVisitor, StatementVisitor {
 private:
+    static map<uint32_t, string> hebrew;
+
     bool truthEvaluation(Value* value);
     bool equalityEvaluation(Value *first, Value *second);
+    static void print(Value* value);
 public:
     Interpreter() {};
     Value* evaluate(Expression* expression);
-    Value* evaluateBinary(Binary* binary);
-    Value* evaluateUnary(Unary* unary);
-    Value* evaluateLiteral(Literal* literal);
-    Value* evaluateGrouping(Grouping* grouping);
+    Value* evaluateBinary(BinaryExpression* binary);
+    Value* evaluateUnary(UnaryExpression* unary);
+    Value* evaluateLiteral(LiteralExpression* literal);
+    Value* evaluateGrouping(GroupingExpression* grouping);
+
+    void execute(vector<Statement*> statements);
+    void executeExpression(ExpressionStatement* statement);
+    void executePrint(PrintStatement* statement);
+
     static void runtimeError(Token* token, string message);
+    static map<uint32_t, string> setupHebrew();
 };
 
 

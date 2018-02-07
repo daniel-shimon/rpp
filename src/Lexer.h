@@ -24,7 +24,7 @@ enum TokenType
 
     Bigger, Smaller, BiggerEq, SmallerEq, Assign,
 
-    NewLine, EndOfFile,
+    Semicolon, NewLine, EndOfFile,
 };
 
 class Token

@@ -8,7 +8,7 @@ Value* Interpreter::evaluate(Expression* expression) {
     return expression->accept(this);
 }
 
-Value* Interpreter::evaluateLiteral(Literal* literal) {
+Value* Interpreter::evaluateLiteral(LiteralExpression* literal) {
     switch (literal->token->type)
     {
         case False:
@@ -26,11 +26,11 @@ Value* Interpreter::evaluateLiteral(Literal* literal) {
     runtimeError(literal->token, "unsupported literal");
 }
 
-Value* Interpreter::evaluateGrouping(Grouping *grouping) {
+Value* Interpreter::evaluateGrouping(GroupingExpression *grouping) {
     return this->evaluate(grouping->value);
 }
 
-Value* Interpreter::evaluateUnary(Unary *unary) {
+Value* Interpreter::evaluateUnary(UnaryExpression *unary) {
     Value* value = evaluate(unary->expression);
     value->token = unary->op;
 
@@ -49,7 +49,7 @@ bool Interpreter::truthEvaluation(Value* value) {
     return value == 0;
 }
 
-Value* Interpreter::evaluateBinary(Binary *binary) {
+Value* Interpreter::evaluateBinary(BinaryExpression *binary) {
     Value* first = evaluate(binary->first);
     first->token = binary->op;
     Value* second = evaluate(binary->second);
@@ -127,6 +127,92 @@ bool Interpreter::equalityEvaluation(Value* first, Value* second) {
 void Interpreter::runtimeError(Token* token, string message) {
     throw RPPException("Runtime Error", token->errorSignature(), message);
 }
+
+void Interpreter::execute(vector<Statement *> statements) {
+    for (Statement* statement : statements)
+        statement->accept(this);
+}
+
+void Interpreter::executeExpression(ExpressionStatement *statement) {
+    evaluate(statement->expression);
+}
+
+void Interpreter::executePrint(PrintStatement *statement) {
+    print(evaluate(statement->expression));
+}
+
+void Interpreter::print(Value* value) {
+    switch (value->type)
+    {
+        case String:
+        {
+            string s = value->getString();
+            string::iterator it = s.begin();
+            while (it != s.end()) {
+                string::iterator prev = it;
+                uint32_t ch = utf8::next(it, s.end());
+                if (hebrew.count(ch) == 0)
+                {
+                    cout << string(prev, it);
+                }
+                else
+                    cout << hebrew[ch];
+            }
+            break;
+        }
+        case Number:
+            cout << value->getNumber();
+            break;
+        case Bool:
+        {
+            string v = value->getBool() ? "True" : "False";
+            cout << v;
+            break;
+        }
+        case NoneType:
+            cout << "None";
+            break;
+        }
+        cout << endl;
+}
+
+map<uint32_t, string> Interpreter::setupHebrew() {
+    string alphabet = "אבגדהוזחטיכלמנסעפצקרשתםףץןך";
+    string::iterator it = alphabet.begin();
+
+    map<uint32_t, string> hebrew;
+    hebrew[utf8::next(it, alphabet.end())] = "a";
+    hebrew[utf8::next(it, alphabet.end())] = "b";
+    hebrew[utf8::next(it, alphabet.end())] = "g";
+    hebrew[utf8::next(it, alphabet.end())] = "d";
+    hebrew[utf8::next(it, alphabet.end())] = "h";
+    hebrew[utf8::next(it, alphabet.end())] = "w";
+    hebrew[utf8::next(it, alphabet.end())] = "z";
+    hebrew[utf8::next(it, alphabet.end())] = "j";
+    hebrew[utf8::next(it, alphabet.end())] = "t";
+    hebrew[utf8::next(it, alphabet.end())] = "y";
+    hebrew[utf8::next(it, alphabet.end())] = "c";
+    hebrew[utf8::next(it, alphabet.end())] = "l";
+    hebrew[utf8::next(it, alphabet.end())] = "m";
+    hebrew[utf8::next(it, alphabet.end())] = "n";
+    hebrew[utf8::next(it, alphabet.end())] = "s";
+    hebrew[utf8::next(it, alphabet.end())] = "'a";
+    hebrew[utf8::next(it, alphabet.end())] = "p";
+    hebrew[utf8::next(it, alphabet.end())] = "tz";
+    hebrew[utf8::next(it, alphabet.end())] = "k";
+    hebrew[utf8::next(it, alphabet.end())] = "r";
+    hebrew[utf8::next(it, alphabet.end())] = "sh";
+    hebrew[utf8::next(it, alphabet.end())] = "t";
+    hebrew[utf8::next(it, alphabet.end())] = "m";
+    hebrew[utf8::next(it, alphabet.end())] = "f";
+    hebrew[utf8::next(it, alphabet.end())] = "tz";
+    hebrew[utf8::next(it, alphabet.end())] = "n";
+    hebrew[utf8::next(it, alphabet.end())] = "j";
+
+    return hebrew;
+}
+
+map<uint32_t, string> Interpreter::hebrew = Interpreter::setupHebrew();
 
 double Value::getNumber() {
     if (type != Number)

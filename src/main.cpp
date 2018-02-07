@@ -2,112 +2,23 @@
 #include "Parser.h"
 #include "Interpreter.h"
 
-#include <iostream>
 #include <fstream>
 #include <sstream>
 
 using namespace std;
 
-map<uint32_t, string> hebrew;
+string version = "0.1";
 
-void print(Value* value)
+int execute(string* source, Interpreter *interpreter = new Interpreter())
 {
-    switch (value->type)
-    {
-        case String:
-        {
-            string s = value->getString();
-            string::iterator it = s.begin();
-            while (it != s.end()) {
-                string::iterator prev = it;
-                uint32_t ch = utf8::next(it, s.end());
-                if (hebrew[ch].empty())
-                {
-                    cout << string(prev, it);
-                }
-                else
-                    cout << hebrew[ch];
-            }
-            cout << endl;
-            break;
-        }
-        case Number:
-            cout << value->getNumber();
-            break;
-        case Bool:
-        {
-            string v = value->getBool() ? "True" : "False";
-            cout << v;
-            break;
-        }
-        case NoneType:
-            cout << "None";
-            break;
-    }
-}
-
-void setup() {
-    string alphabet = "אבגדהוזחטיכלמנסעפצקרשתםףץןך";
-    string::iterator it = alphabet.begin();
-    hebrew[utf8::next(it, alphabet.end())] = "a";
-    hebrew[utf8::next(it, alphabet.end())] = "b";
-    hebrew[utf8::next(it, alphabet.end())] = "g";
-    hebrew[utf8::next(it, alphabet.end())] = "d";
-    hebrew[utf8::next(it, alphabet.end())] = "h";
-    hebrew[utf8::next(it, alphabet.end())] = "w";
-    hebrew[utf8::next(it, alphabet.end())] = "z";
-    hebrew[utf8::next(it, alphabet.end())] = "j";
-    hebrew[utf8::next(it, alphabet.end())] = "t";
-    hebrew[utf8::next(it, alphabet.end())] = "y";
-    hebrew[utf8::next(it, alphabet.end())] = "c";
-    hebrew[utf8::next(it, alphabet.end())] = "l";
-    hebrew[utf8::next(it, alphabet.end())] = "m";
-    hebrew[utf8::next(it, alphabet.end())] = "n";
-    hebrew[utf8::next(it, alphabet.end())] = "s";
-    hebrew[utf8::next(it, alphabet.end())] = "'a";
-    hebrew[utf8::next(it, alphabet.end())] = "p";
-    hebrew[utf8::next(it, alphabet.end())] = "tz";
-    hebrew[utf8::next(it, alphabet.end())] = "k";
-    hebrew[utf8::next(it, alphabet.end())] = "r";
-    hebrew[utf8::next(it, alphabet.end())] = "sh";
-    hebrew[utf8::next(it, alphabet.end())] = "t";
-    hebrew[utf8::next(it, alphabet.end())] = "m";
-    hebrew[utf8::next(it, alphabet.end())] = "f";
-    hebrew[utf8::next(it, alphabet.end())] = "tz";
-    hebrew[utf8::next(it, alphabet.end())] = "n";
-    hebrew[utf8::next(it, alphabet.end())] = "j";
-}
-
-int main(int argC, char** argV) {
-    string* source;
-    if (argC <= 1)
-        source = new string("12%10");
-    else if (argC == 2)
-    {
-        ifstream file(argV[1]);
-        stringstream buffer;
-        buffer << file.rdbuf();
-        source = new string(buffer.str());
-    }
-    else if (argC == 3 && string(argV[1]) == "-c")
-        source = new string(argV[2]);
-    else
-    {
-        cout << "usage:" << endl << "\trpp path" << endl << "\trpp -c code" << endl;
-        return 1;
-    }
-
-    setup();
-
     try
     {
         Lexer *lexer = new Lexer(source);
         Parser *parser = new Parser(lexer->scan());
-        Interpreter *interpreter = new Interpreter();
+        interpreter->execute(parser->parse());
 
-        Value *value = interpreter->evaluate(parser->parse());
-
-        print(value);
+        delete lexer;
+        delete parser;
     } catch (RPPException exception)
     {
         cout << exception.what() << endl;
@@ -115,4 +26,46 @@ int main(int argC, char** argV) {
     }
 
     return 0;
+}
+
+int main(int argC, char** argV) {
+    string* source = new string();
+    int returnValue;
+    if (argC <= 1)
+    {
+        cout << "Welcome to interactive rpp (" << version << ")!" << endl;
+        Interpreter* interpreter = new Interpreter();
+        while (true)
+        {
+            cout << ">";
+            getline(cin, *source);
+            returnValue = execute(source, interpreter);
+            if (returnValue != 0)
+                return returnValue;
+        }
+    }
+
+    if (argC == 2 && (string(argV[1]) == "-v" || string(argV[1]) == "--version"))
+    {
+        cout << "rpp version " << version;
+        return 0;
+    }
+
+    if (argC == 2)
+    {
+        ifstream file(argV[1]);
+        stringstream buffer;
+        buffer << file.rdbuf();
+        source = new string(buffer.str());
+        return execute(source);
+    }
+
+    if (argC == 3 && string(argV[1]) == "-c")
+    {
+        source = new string(argV[2]);
+        return execute(source);
+    }
+
+    cout << "usage:" << endl << "\trpp path" << endl << "\trpp -c code" << endl;
+    return 1;
 }
