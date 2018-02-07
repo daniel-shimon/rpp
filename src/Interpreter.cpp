@@ -4,6 +4,8 @@
 
 #include "Interpreter.h"
 
+// region evaluation
+
 Value* Interpreter::evaluate(Expression* expression) {
     return expression->accept(this);
 }
@@ -42,11 +44,7 @@ Value* Interpreter::evaluateUnary(UnaryExpression *unary) {
             return new Value(Number, new double(-value->getNumber()));
     }
 
-    runtimeError(unary->op, "unsupported operator");
-}
-
-bool Interpreter::truthEvaluation(Value* value) {
-    return value == 0;
+    runtimeError(unary->op);
 }
 
 Value* Interpreter::evaluateBinary(BinaryExpression *binary) {
@@ -106,7 +104,21 @@ Value* Interpreter::evaluateBinary(BinaryExpression *binary) {
             return new Value(Number, new double((int) first->getNumber() % (int) second->getNumber()));
     }
 
-    runtimeError(binary->op, "unsupported operator");
+    runtimeError(binary->op);
+}
+
+Value *Interpreter::evaluateVariable(VariableExpression *variable) {
+    Value* value = environment.get(*(string*)variable->token->value);
+
+    if (value == nullptr)
+        throw RPPException("Name error", variable->token->errorSignature(),
+                           *(string*)variable->token->value + " is not defined");
+
+    return value;
+}
+
+bool Interpreter::truthEvaluation(Value* value) {
+    return value == 0;
 }
 
 bool Interpreter::equalityEvaluation(Value* first, Value* second) {
@@ -124,40 +136,48 @@ bool Interpreter::equalityEvaluation(Value* first, Value* second) {
     return false;
 }
 
-void Interpreter::runtimeError(Token* token, string message) {
-    throw RPPException("Runtime Error", token->errorSignature(), message);
-}
+// endregion
 
-void Interpreter::execute(vector<Statement *> statements) {
+// region execution
+
+Value* Interpreter::execute(vector<Statement *> statements) {
+    Value* returnValue = Value::None;
     for (Statement* statement : statements)
-        statement->accept(this);
+    {
+        try
+        {
+            statement->accept(this);
+        }
+        catch (Value* value)
+        {
+            returnValue = value;
+        }
+    }
+    return returnValue;
 }
 
 void Interpreter::executeExpression(ExpressionStatement *statement) {
-    evaluate(statement->expression);
+    throw evaluate(statement->expression);
 }
 
 void Interpreter::executePrint(PrintStatement *statement) {
     print(evaluate(statement->expression));
 }
 
-void Interpreter::print(Value* value) {
+void Interpreter::executeAssign(AssignStatement *statement) {
+    environment.set(*(string*)statement->token->value, evaluate(statement->value));
+}
+
+// endregion
+
+// region utils
+
+void Interpreter::print(Value* value, bool printNone) {
     switch (value->type)
     {
         case String:
         {
-            string s = value->getString();
-            string::iterator it = s.begin();
-            while (it != s.end()) {
-                string::iterator prev = it;
-                uint32_t ch = utf8::next(it, s.end());
-                if (hebrew.count(ch) == 0)
-                {
-                    cout << string(prev, it);
-                }
-                else
-                    cout << hebrew[ch];
-            }
+            cout << englishify(value);
             break;
         }
         case Number:
@@ -170,10 +190,29 @@ void Interpreter::print(Value* value) {
             break;
         }
         case NoneType:
-            cout << "None";
-            break;
+            if (printNone)
+                cout << "None";
+            else
+                return;
         }
         cout << endl;
+}
+
+string Interpreter::englishify(Value *value) {
+    string output = "";
+    string origin = value->getString();
+
+    string::iterator it = origin.begin();
+    while (it != origin.end())
+    {
+        string::iterator prev = it;
+        uint32_t ch = utf8::next(it, origin.end());
+        if (hebrew.count(ch) == 0)
+            output += string(prev, it);
+        else
+            output += hebrew[ch];
+    }
+    return output;
 }
 
 map<uint32_t, string> Interpreter::setupHebrew() {
@@ -214,20 +253,56 @@ map<uint32_t, string> Interpreter::setupHebrew() {
 
 map<uint32_t, string> Interpreter::hebrew = Interpreter::setupHebrew();
 
+void Interpreter::runtimeError(Token* token, string message) {
+    throw RPPException("Runtime Error", token->errorSignature(), message);
+}
+
+void Environment::set(string name, Value *value) {
+    variables[name] = value;
+}
+
+Value *Environment::get(string name) {
+    return variables[name];
+}
+
+// endregion
+
+// region values
+
+Value* Value::None = new Value(NoneType, nullptr);
+
 double Value::getNumber() {
     if (type != Number)
-        Interpreter::runtimeError(token, "value is not a Number");
+        Interpreter::runtimeError(token, "value " + toString() + " is not a Number");
     return *(double*)value;
 }
 
 bool Value::getBool() {
     if (type != Bool)
-        Interpreter::runtimeError(token, "value is not a Bool");
+        Interpreter::runtimeError(token, "value " + toString() + " is not a Bool");
     return (bool)value;
 }
 
 string Value::getString() {
     if (type != String)
-        Interpreter::runtimeError(token, "value is not a String");
+        Interpreter::runtimeError(token, "value " + toString() + " is not a String");
     return *(string*)value;
 }
+
+string Value::toString() {
+    switch (type)
+    {
+        case NoneType:
+            return "none";
+        case Number:
+            return to_string(getNumber());
+        case Bool:
+            if (getBool())
+                return "true";
+            return "false";
+        case String:
+            return "'" + Interpreter::englishify(this) + "'";
+    }
+}
+
+// endregion

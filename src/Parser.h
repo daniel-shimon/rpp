@@ -52,6 +52,14 @@ public:
     GroupingExpression(Expression* value) : value(value) {};
     Value* accept(ExpressionVisitor* visitor);
 };
+class VariableExpression: public Expression
+{
+public:
+    Token* token;
+
+    VariableExpression(Token* token) : token(token) {};
+    Value* accept(ExpressionVisitor* visitor);
+};
 
 class Statement
 {
@@ -67,13 +75,21 @@ public:
     ExpressionStatement(Expression* expression): expression(expression) {};
     void accept(StatementVisitor* visitor);
 };
-
 class PrintStatement : public Statement
 {
 public:
     Expression* expression;
 
     PrintStatement(Expression* expression): expression(expression) {};
+    void accept(StatementVisitor* visitor);
+};
+class AssignStatement : public Statement
+{
+public:
+    Token* token;
+    Expression* value;
+
+    AssignStatement(Token* identifier, Expression* value): token(identifier), value(value) {};
     void accept(StatementVisitor* visitor);
 };
 
@@ -85,6 +101,7 @@ public:
     virtual Value* evaluateUnary(UnaryExpression* unary) = 0;
     virtual Value* evaluateLiteral(LiteralExpression* literal) = 0;
     virtual Value* evaluateGrouping(GroupingExpression* grouping) = 0;
+    virtual Value* evaluateVariable(VariableExpression* variable) = 0;
 };
 
 class StatementVisitor
@@ -92,6 +109,7 @@ class StatementVisitor
 public:
     virtual void executeExpression(ExpressionStatement* statement) = 0;
     virtual void executePrint(PrintStatement* statement) = 0;
+    virtual void executeAssign(AssignStatement* statement) = 0;
 };
 
 class Parser
@@ -111,14 +129,15 @@ private:
 
     Statement* statement();
     Statement* printStatement();
+    Statement* assignStatement();
 
     Token* next();
     Token* peek();
     bool nextMatch(TokenType type);
     bool isAtEnd();
-    bool check(TokenType type);
+    bool match(TokenType type, int offset = 0);
     bool peekMatch(initializer_list<TokenType> types);
-    void syntaxError(string message);
+    void syntaxError(string message = "unexpected symbol");
 
     Expression* parseBinary(Expression* (Parser::*parseFunction)(), initializer_list<TokenType> typesList);
 public:

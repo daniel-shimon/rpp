@@ -51,9 +51,9 @@ vector<Token*> Lexer::scan()
                 else
                     addToken(Assign, "=");
                 break;
-            case '\r':
             case ' ':
                 break;
+            case '\r':
             case '\n':
                 line++;
                 index = 1;
@@ -71,7 +71,7 @@ vector<Token*> Lexer::scan()
                 else if (isAlpha(ch))
                     scanIdentifier();
                 else
-                    throw RPPException("Unexpected Character", Token::errorSignature(line, index), string(1, (char)ch));
+                    throw RPPException("unexpected Character", Token::errorSignature(line, index), string(1, (char)ch));
         }
     }
 
@@ -89,6 +89,8 @@ bool Lexer::isAtEnd() {
 
 uint32_t Lexer::next() {
     index++;
+    if (utf8::is_bom(iterator))
+        iterator += 3;
     return utf8::next(iterator, end);
 }
 
@@ -169,7 +171,7 @@ string Token::errorSignature()
 }
 
 string Token::errorSignature(int line, int index, string lexeme) {
-    return "at line " + to_string(line) + " index " + to_string(index) + " (" + lexeme + ")";
+    return "at line " + to_string(line) + " index " + to_string(index) + " ('" + lexeme + "')";
 }
 
 bool Lexer::isAlpha(uint32_t ch) {

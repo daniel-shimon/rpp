@@ -3,32 +3,45 @@
 #include "Interpreter.h"
 
 #include <fstream>
-#include <sstream>
 
 using namespace std;
 
 string version = "0.1";
 
-int execute(string* source, Interpreter *interpreter = new Interpreter())
+int execute(string* source, Interpreter *interpreter = new Interpreter(), bool eval = false)
 {
     try
     {
         Lexer *lexer = new Lexer(source);
-        Parser *parser = new Parser(lexer->scan());
-        interpreter->execute(parser->parse());
+        vector<Token *> tokens = lexer->scan();
+        Parser *parser = new Parser(tokens);
+        Value* value = interpreter->execute(parser->parse());
+
+        if (eval)
+            interpreter->print(value, false);
 
         delete lexer;
         delete parser;
+    } catch (vector<RPPException> exceptions)
+    {
+        for (RPPException exception : exceptions)
+            cout << exception.what() << endl;
+
+        if (!eval)
+            return 1;
     } catch (RPPException exception)
     {
-        cout << exception.what() << endl;
-        return 1;
+        cout << exception.what() << endl ;
+
+        if (!eval)
+            return 1;
     }
 
     return 0;
 }
 
-int main(int argC, char** argV) {
+int main(int argC, char** argV)
+{
     string* source = new string();
     int returnValue;
     if (argC <= 1)
@@ -39,7 +52,7 @@ int main(int argC, char** argV) {
         {
             cout << ">";
             getline(cin, *source);
-            returnValue = execute(source, interpreter);
+            returnValue = execute(source, interpreter, true);
             if (returnValue != 0)
                 return returnValue;
         }
@@ -54,9 +67,28 @@ int main(int argC, char** argV) {
     if (argC == 2)
     {
         ifstream file(argV[1]);
-        stringstream buffer;
-        buffer << file.rdbuf();
-        source = new string(buffer.str());
+        if (!file.is_open())
+        {
+            cout << "could not open '" << argV[1] << "'" << endl;
+            return 2;
+        }
+
+        string buff = "";
+        string line;
+        unsigned int lineCount = 1;
+        while (getline(file, line))
+        {
+            string::iterator invalid = utf8::find_invalid(line.begin(), line.end());
+            if (invalid != line.end())
+            {
+                cout << "invalid UTF-8 at line " << lineCount << endl;
+                return 2;
+            }
+            lineCount++;
+            buff += line + "\n";
+        }
+        source = new string(buff);
+
         return execute(source);
     }
 
@@ -66,6 +98,6 @@ int main(int argC, char** argV) {
         return execute(source);
     }
 
-    cout << "usage:" << endl << "\trpp path" << endl << "\trpp -c code" << endl;
+    cout << "usage:" << endl << "\trpp [path] [-v] [--version] [-c code] [-i] [--interactive]" << endl;
     return 1;
 }

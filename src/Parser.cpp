@@ -4,6 +4,8 @@
 
 #include "Parser.h"
 
+// region expressions
+
 Expression* Parser::expression()
 {
     return equality();
@@ -49,9 +51,10 @@ Expression* Parser::unary()
 Expression* Parser::primary()
 {
     if (peekMatch({False, True, None, StringLiteral, NumberLiteral}))
-    {
         return new LiteralExpression(next());
-    }
+
+    if (match(Identifier))
+        return new VariableExpression(next());
 
     if (nextMatch(RightParen))
     {
@@ -62,8 +65,41 @@ Expression* Parser::primary()
         syntaxError("missing (");
     }
 
-    syntaxError("unsupported symbol");
+    syntaxError();
 }
+
+// endregion
+
+// region statements
+
+Statement *Parser::statement() {
+    if (nextMatch(Print))
+        return printStatement();
+    if (match(Identifier) && match(Assign, 1))
+        return assignStatement();
+
+    return expressionStatement();
+}
+
+ExpressionStatement *Parser::expressionStatement()
+{
+    return new ExpressionStatement(expression());
+}
+
+Statement *Parser::printStatement() {
+    return new PrintStatement(expression());
+}
+
+Statement *Parser::assignStatement() {
+    Token* identifier = next();
+    next();
+    Expression* value = expression();
+    return new AssignStatement(identifier, value);
+}
+
+// endregion
+
+// region utils
 
 Token* Parser::next() {
     Token* token = tokens[current];
@@ -75,27 +111,37 @@ Token* Parser::peek() {
     return tokens[current];
 }
 
+bool Parser::isAtEnd() {
+    return peek()->type == EndOfFile;
+}
+
+
 bool Parser::peekMatch(initializer_list<TokenType> typesList) {
     vector<TokenType> types = vector<TokenType>(typesList.begin(), typesList.end());
 
     for (TokenType type : types)
-        if (check(type))
+        if (match(type))
             return true;
 
     return false;
 }
 
-bool Parser::check(TokenType type) {
-    if (isAtEnd())
+bool Parser::match(TokenType type, int offset) {
+    if (tokens.size() - current < offset + 1)
         return false;
 
-    return (peek()->type == type);
+    return (tokens[current+offset]->type == type);
 }
 
-bool Parser::isAtEnd() {
-    return peek()->type == EndOfFile;
-}
+bool Parser::nextMatch(TokenType type) {
+    if (match(type))
+    {
+        next();
+        return true;
+    }
 
+    return false;
+}
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wincompatible-pointer-types"
 Expression* Parser::parseBinary(Expression* (Parser::*parseFunction)(), initializer_list<TokenType> typesList) {
@@ -112,30 +158,34 @@ Expression* Parser::parseBinary(Expression* (Parser::*parseFunction)(), initiali
 }
 #pragma clang diagnostic pop
 
-bool Parser::nextMatch(TokenType type) {
-    if (check(type))
-    {
-        next();
-        return true;
-    }
-
-    return false;
-}
-
 vector<Statement*> Parser::parse() {
     vector<Statement*> statements;
+    vector<RPPException> exceptions;
 
+    while(nextMatch(NewLine)) {}
     while (!isAtEnd())
     {
-        while(nextMatch(NewLine)) {}
-        statements.push_back(statement());
+        try
+        {
+            while(nextMatch(NewLine)) {}
+            statements.push_back(statement());
+
+            if (!peekMatch({Semicolon, NewLine, EndOfFile}))
+                syntaxError();
+        }
+        catch (RPPException exception)
+        {
+            exceptions.push_back(exception);
+            while(!peekMatch({Semicolon, NewLine, EndOfFile}))
+                next();
+        }
+
         if (peekMatch({Semicolon, NewLine}))
             next();
-        else if (isAtEnd())
-            break;
-        else
-            syntaxError("Unexpected symbol");
     }
+
+    if (exceptions.size() > 0)
+        throw exceptions;
 
     return statements;
 }
@@ -144,21 +194,9 @@ void Parser::syntaxError(string message) {
     throw RPPException("Syntax Error", tokens[current]->errorSignature(), message);
 }
 
-Statement *Parser::statement() {
-    if (nextMatch(Print))
-        return printStatement();
+// endregion
 
-    return expressionStatement();
-}
-
-ExpressionStatement *Parser::expressionStatement()
-{
-    return new ExpressionStatement(expression());
-}
-
-Statement *Parser::printStatement() {
-    return new PrintStatement(expression());
-}
+// region accepts
 
 Value* GroupingExpression::accept(ExpressionVisitor* visitor) {
     return visitor->evaluateGrouping(this);
@@ -176,6 +214,10 @@ Value* BinaryExpression::accept(ExpressionVisitor* visitor) {
     return visitor->evaluateBinary(this);
 }
 
+Value *VariableExpression::accept(ExpressionVisitor *visitor) {
+    return visitor->evaluateVariable(this);
+}
+
 void ExpressionStatement::accept(StatementVisitor* visitor) {
     visitor->executeExpression(this);
 }
@@ -183,3 +225,9 @@ void ExpressionStatement::accept(StatementVisitor* visitor) {
 void PrintStatement::accept(StatementVisitor *visitor) {
     visitor->executePrint(this);
 }
+
+void AssignStatement::accept(StatementVisitor *visitor) {
+    return visitor->executeAssign(this);
+}
+
+// endregion
