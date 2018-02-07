@@ -73,8 +73,8 @@ Expression* Parser::primary()
 // region statements
 
 Statement *Parser::statement() {
-    if (nextMatch(Print))
-        return printStatement();
+    if (peekMatch({Print, Exit}))
+        return commandStatement();
     if (match(Identifier) && match(Assign, 1))
         return assignStatement();
 
@@ -86,8 +86,9 @@ ExpressionStatement *Parser::expressionStatement()
     return new ExpressionStatement(expression());
 }
 
-Statement *Parser::printStatement() {
-    return new PrintStatement(expression());
+Statement *Parser::commandStatement() {
+    Token* command = next();
+    return new CommandStatement(command, expression());
 }
 
 Statement *Parser::assignStatement() {
@@ -222,8 +223,8 @@ void ExpressionStatement::accept(StatementVisitor* visitor) {
     visitor->executeExpression(this);
 }
 
-void PrintStatement::accept(StatementVisitor *visitor) {
-    visitor->executePrint(this);
+void CommandStatement::accept(StatementVisitor *visitor) {
+    visitor->executeCommand(this);
 }
 
 void AssignStatement::accept(StatementVisitor *visitor) {

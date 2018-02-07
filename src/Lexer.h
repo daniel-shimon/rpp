@@ -20,9 +20,11 @@ enum TokenType
 
     Identifier, StringLiteral, NumberLiteral, False, True, None,
 
-    And, Or, Def, Print, If, Else, Elif, Not, Equals, NotEquals, Power,
+    And, Or, Def, If, Else, Elif, Not, Equals, NotEquals, Power,
 
     Bigger, Smaller, BiggerEq, SmallerEq, Assign,
+
+    Print, Exit,
 
     Semicolon, NewLine, EndOfFile,
 };
@@ -59,7 +61,8 @@ const map<string, TokenType> reserved = {
         {"וגם", And},
         {"או", Or},
         {"הגדר", Def},
-        {"כתוב", Print},
+        {"פלוט", Print},
+        {"צא", Exit},
         {"אלולא", If},
         {"אחרת", Else},
         {"אואם", Elif},

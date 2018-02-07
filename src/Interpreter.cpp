@@ -160,8 +160,15 @@ void Interpreter::executeExpression(ExpressionStatement *statement) {
     throw evaluate(statement->expression);
 }
 
-void Interpreter::executePrint(PrintStatement *statement) {
-    print(evaluate(statement->expression));
+void Interpreter::executeCommand(CommandStatement *statement) {
+    switch (statement->command->type)
+    {
+        case Print:
+            print(evaluate(statement->expression));
+            break;
+        case Exit:
+            exit((int)evaluate(statement->expression)->getNumber());
+    }
 }
 
 void Interpreter::executeAssign(AssignStatement *statement) {

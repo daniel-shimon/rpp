@@ -6,6 +6,7 @@
 #define RSHI_INTERPRETER_H
 
 #include <math.h>
+#include <stdlib.h>
 #include <iostream>
 
 #include "Parser.h"
@@ -59,7 +60,7 @@ public:
 
     Value* execute(vector<Statement*> statements);
     void executeExpression(ExpressionStatement* statement);
-    void executePrint(PrintStatement* statement);
+    void executeCommand(CommandStatement *statement);
     void executeAssign(AssignStatement* statement);
 
     static void runtimeError(Token* token, string message = "unsupported operator");

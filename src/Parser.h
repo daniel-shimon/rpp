@@ -75,12 +75,13 @@ public:
     ExpressionStatement(Expression* expression): expression(expression) {};
     void accept(StatementVisitor* visitor);
 };
-class PrintStatement : public Statement
+class CommandStatement : public Statement
 {
 public:
+    Token* command;
     Expression* expression;
 
-    PrintStatement(Expression* expression): expression(expression) {};
+    CommandStatement(Token* command, Expression* expression): command(command), expression(expression) {};
     void accept(StatementVisitor* visitor);
 };
 class AssignStatement : public Statement
@@ -108,7 +109,7 @@ class StatementVisitor
 {
 public:
     virtual void executeExpression(ExpressionStatement* statement) = 0;
-    virtual void executePrint(PrintStatement* statement) = 0;
+    virtual void executeCommand(CommandStatement *statement) = 0;
     virtual void executeAssign(AssignStatement* statement) = 0;
 };
 
@@ -128,7 +129,7 @@ private:
     Expression* primary();
 
     Statement* statement();
-    Statement* printStatement();
+    Statement* commandStatement();
     Statement* assignStatement();
 
     Token* next();
