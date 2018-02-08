@@ -26,6 +26,12 @@ vector<Token*> Lexer::scan()
             case ';': addToken(Semicolon, ";"); break;
             case ':': addToken(Colon, ":"); break;
             case '\t': addToken(Indent, "tab"); break;
+            case '!':
+                if (nextMatches('='))
+                    addToken(NotEquals, "!=");
+                else
+                    addToken(Not, "!");
+                break;
             case '*':
                 if (nextMatches('*'))
                     addToken(Power, "**");
@@ -50,6 +56,8 @@ vector<Token*> Lexer::scan()
             case '=':
                 if (nextMatches('>'))
                     addToken(BiggerEq, "=>");
+                else if (nextMatches('='))
+                    addToken(Equals, "==");
                 else
                     addToken(Assign, "=");
                 break;

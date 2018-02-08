@@ -25,6 +25,12 @@ public:
     static Value* None;
 
     Value(ValueType type, void* value): type(type), value(value) {};
+    Value(bool value): type(Bool), value((void*)value) {};
+    Value(double value): type(Number), value(new double(value)) {};
+    Value(double* value): type(Number), value(value) {};
+    Value(string value): type(String), value(new string(value)) {};
+    Value(string* value): type(String), value(value) {};
+    Value(): type(NoneType), value(nullptr) {};
     double getNumber();
     bool getBool();
     string getString();
@@ -35,22 +41,29 @@ class Environment
 {
 private:
     map<string, Value*> variables;
+    Environment* enclosing;
 
 public:
-    Environment() {};
+    Environment(Environment* enclosing = nullptr) : enclosing(enclosing) {};
     void set(string name, Value* value);
     Value* get(string name);
+    Environment* getEnclosing();
+    ~Environment() {
+        enclosing = nullptr;
+    }
 };
 
 class Interpreter : ExpressionVisitor, StatementVisitor {
 private:
     static map<uint32_t, string> hebrew;
-    Environment environment;
+    Environment* environment;
 
     bool truthEvaluation(Value* value);
     bool equalityEvaluation(Value *first, Value *second);
 public:
-    Interpreter() {};
+    Interpreter() {
+        environment = new Environment();
+    };
     Value* evaluate(Expression* expression);
     Value* evaluateBinary(BinaryExpression* binary);
     Value* evaluateUnary(UnaryExpression* unary);
@@ -62,6 +75,7 @@ public:
     void executeExpression(ExpressionStatement* statement);
     void executeCommand(CommandStatement *statement);
     void executeIf(IfStatement* statement);
+    void executeWhile(WhileStatement* statement);
     void executeAssign(AssignStatement* statement);
     void executeBlock(BlockStatement* statement);
 

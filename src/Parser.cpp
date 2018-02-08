@@ -8,7 +8,7 @@
 
 Expression* Parser::expression()
 {
-    return equality();
+    return parseBinary(equality, {And, Or});
 }
 
 Expression* Parser::equality()
@@ -77,6 +77,8 @@ Statement *Parser::statement() {
         return commandStatement();
     if (nextMatch(If))
         return ifStatement();
+    if (nextMatch(While))
+        return whileStatement();
 
     return assignStatement();
 }
@@ -86,8 +88,10 @@ Statement *Parser::ifStatement() {
     Statement* action = actionStatement();
 
     vector<pair<Expression*, Statement*>> elifs;
-    while (nextMatch(Elif))
+    while (match(Else) && match(If, 1))
     {
+        next();
+        next();
         Expression* elifCondition = expression();
         Statement* elifAction = actionStatement();
         pair<Expression*, Statement*> elif(elifCondition, elifAction);
@@ -99,6 +103,13 @@ Statement *Parser::ifStatement() {
         elseAction = actionStatement();
 
     return new IfStatement(condition, action, elifs, elseAction);
+}
+
+Statement *Parser::whileStatement() {
+    Expression* condition = expression();
+    Statement* action = actionStatement();
+
+    return new WhileStatement(condition, action);
 }
 
 Statement *Parser::assignStatement() {
@@ -298,6 +309,10 @@ void IfStatement::accept(StatementVisitor *visitor) {
 
 void BlockStatement::accept(StatementVisitor *visitor) {
     visitor->executeBlock(this);
+}
+
+void WhileStatement::accept(StatementVisitor *visitor) {
+    visitor->executeWhile(this);
 }
 
 // endregion

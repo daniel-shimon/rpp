@@ -14,15 +14,15 @@ Value* Interpreter::evaluateLiteral(LiteralExpression* literal) {
     switch (literal->token->type)
     {
         case False:
-            return new Value(Bool, (void*)false);
+            return new Value(false);
         case True:
-            return new Value(Bool, (void*)true);
+            return new Value(true);
         case None:
-            return new Value(NoneType, nullptr);
+            return Value::None;
         case StringLiteral:
-            return new Value(String, literal->token->value);
+            return new Value((string*)literal->token->value);
         case NumberLiteral:
-            return new Value(Number, literal->token->value);
+            return new Value((double*)literal->token->value);
     }
 
     runtimeError(literal->token, "unsupported literal");
@@ -39,15 +39,20 @@ Value* Interpreter::evaluateUnary(UnaryExpression *unary) {
     switch (unary->op->type)
     {
         case Not:
-            return new Value(Bool, (void*)!truthEvaluation(value));
+            return new Value(!truthEvaluation(value));
         case Minus:
-            return new Value(Number, new double(-value->getNumber()));
+            return new Value(-value->getNumber());
     }
 
     runtimeError(unary->op);
 }
 
 Value* Interpreter::evaluateBinary(BinaryExpression *binary) {
+    if (binary->op->type == And)
+        return new Value(truthEvaluation(evaluate(binary->first)) && truthEvaluation(evaluate(binary->second)));
+    if (binary->op->type == Or)
+        return new Value(truthEvaluation(evaluate(binary->first)) || truthEvaluation(evaluate(binary->second)));
+
     Value* first = evaluate(binary->first);
     first->token = binary->op;
     Value* second = evaluate(binary->second);
@@ -56,30 +61,30 @@ Value* Interpreter::evaluateBinary(BinaryExpression *binary) {
     switch (binary->op->type)
     {
         case Equals:
-            return new Value(Bool, (void*)equalityEvaluation(first, second));
+            return new Value(equalityEvaluation(first, second));
         case NotEquals:
-            return new Value(Bool, (void*)!equalityEvaluation(first, second));
+            return new Value(!equalityEvaluation(first, second));
         case Bigger:
-            return new Value(Bool, (void*)(first->getNumber() > second->getNumber()));
+            return new Value((first->getNumber() > second->getNumber()));
         case Smaller:
-            return new Value(Bool, (void*)(first->getNumber() < second->getNumber()));
+            return new Value((first->getNumber() < second->getNumber()));
         case BiggerEq:
-            return new Value(Bool, (void*)(first->getNumber() >= second->getNumber()));
+            return new Value((first->getNumber() >= second->getNumber()));
         case SmallerEq:
-            return new Value(Bool, (void*)(first->getNumber() <= second->getNumber()));
+            return new Value((first->getNumber() <= second->getNumber()));
         case Plus:
             if (first->type == Number && second->type == Number)
-                return new Value(Number, new double(first->getNumber() + second->getNumber()));
+                return new Value(first->getNumber() + second->getNumber());
             if (first->type == String && second->type == String)
-                return new Value(String, new string(first->getString() + second->getString()));
+                return new Value(first->getString() + second->getString());
             break;
         case Minus:
-            return new Value(Number, new double(first->getNumber() - second->getNumber()));
+            return new Value(first->getNumber() - second->getNumber());
         case Divide:
-            return new Value(Number, new double(first->getNumber() / second->getNumber()));
+            return new Value(first->getNumber() / second->getNumber());
         case Multiply:
             if (first->type == Number && second->type == Number)
-                return new Value(Number, new double(first->getNumber() * second->getNumber()));
+                return new Value(first->getNumber() * second->getNumber());
             if ((first->type == String && second->type == Number) || (first->type == Number && second->type == String))
             {
                 string repeat;
@@ -96,19 +101,19 @@ Value* Interpreter::evaluateBinary(BinaryExpression *binary) {
                 string value = "";
                 for (; count > 0; count--)
                     value += repeat;
-                return new Value(String, new string(value));
+                return new Value(value);
             }
         case Power:
-            return new Value(Number, new double(pow(first->getNumber(), second->getNumber())));
+            return new Value(pow(first->getNumber(), second->getNumber()));
         case Modulo:
-            return new Value(Number, new double((int) first->getNumber() % (int) second->getNumber()));
+            return new Value((double((int) first->getNumber() % (int) second->getNumber())));
     }
 
     runtimeError(binary->op);
 }
 
 Value *Interpreter::evaluateVariable(VariableExpression *variable) {
-    Value* value = environment.get(*(string*)variable->token->value);
+    Value* value = environment->get(*(string*)variable->token->value);
 
     if (value == nullptr)
         throw RPPException("Name error", variable->token->errorSignature(),
@@ -120,6 +125,7 @@ Value *Interpreter::evaluateVariable(VariableExpression *variable) {
 bool Interpreter::truthEvaluation(Value* value) {
     if (value->type == Bool)
         return value->getBool();
+    return value->type != NoneType;
 }
 
 bool Interpreter::equalityEvaluation(Value* first, Value* second) {
@@ -173,7 +179,7 @@ void Interpreter::executeCommand(CommandStatement *statement) {
 }
 
 void Interpreter::executeAssign(AssignStatement *statement) {
-    environment.set(*(string*)statement->token->value, evaluate(statement->value));
+    environment->set(*(string*)statement->token->value, evaluate(statement->value));
 }
 
 void Interpreter::executeIf(IfStatement *statement) {
@@ -186,6 +192,17 @@ void Interpreter::executeIf(IfStatement *statement) {
 
     if (statement->elseAction != nullptr)
         statement->elseAction->accept(this);
+}
+
+void Interpreter::executeBlock(BlockStatement *statement) {
+    Environment* newEnvironment = new Environment(environment);
+    environment = newEnvironment;
+
+    for (Statement* inlineStatement : statement->statements)
+        inlineStatement->accept(this);
+
+    environment = environment->getEnclosing();
+    delete newEnvironment;
 }
 
 // endregion
@@ -277,24 +294,34 @@ void Interpreter::runtimeError(Token* token, string message) {
     throw RPPException("Runtime Error", token->errorSignature(), message);
 }
 
-void Interpreter::executeBlock(BlockStatement *statement) {
-    for (Statement* inlineStatement : statement->statements)
-        inlineStatement->accept(this);
+void Interpreter::executeWhile(WhileStatement *statement) {
+    while (truthEvaluation(evaluate(statement->condition)))
+        statement->action->accept(this);
 }
 
 void Environment::set(string name, Value *value) {
-    variables[name] = value;
+    if (enclosing == nullptr || enclosing->get(name) == nullptr)
+        variables[name] = value;
+    else
+        enclosing->set(name, value);
 }
 
 Value *Environment::get(string name) {
-    return variables[name];
+    Value* value = variables[name];
+    if (value == nullptr && enclosing != nullptr)
+        return enclosing->get(name);
+    return value;
+}
+
+Environment *Environment::getEnclosing() {
+    return enclosing;
 }
 
 // endregion
 
 // region values
 
-Value* Value::None = new Value(NoneType, nullptr);
+Value* Value::None = new Value();
 
 double Value::getNumber() {
     if (type != Number)

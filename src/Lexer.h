@@ -20,7 +20,7 @@ enum TokenType
 
     Identifier, StringLiteral, NumberLiteral, False, True, None,
 
-    And, Or, Def, If, Else, Elif, Not, Equals, NotEquals, Power,
+    And, Or, Def, If, Else, Not, Equals, NotEquals, Power, While,
 
     Bigger, Smaller, BiggerEq, SmallerEq, Assign,
 
@@ -57,6 +57,7 @@ public:
 };
 
 //region Reserved
+
 const map<string, TokenType> reserved = {
         {"וגם", And},
         {"או", Or},
@@ -66,7 +67,7 @@ const map<string, TokenType> reserved = {
         {"אם", If},
         {"אלולא", If},
         {"אחרת", Else},
-        {"אואם", Elif},
+        {"כלעוד", While},
         {"לא", Not},
         {"שווהל", Equals},
         {"שונהמ", NotEquals},
@@ -76,6 +77,7 @@ const map<string, TokenType> reserved = {
         {"אמת", True},
         {"ריק", None},
 };
+
 //endregion
 
 class Lexer {

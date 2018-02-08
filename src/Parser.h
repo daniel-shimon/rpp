@@ -104,6 +104,15 @@ public:
                 Statement* elseAction): condition(condition), action(action), elifs(elifs), elseAction(elseAction) {};
     void accept(StatementVisitor* visitor);
 };
+class WhileStatement : public Statement
+{
+public:
+    Expression* condition;
+    Statement* action;
+
+    WhileStatement(Expression* condition, Statement* action): condition(condition), action(action) {};
+    void accept(StatementVisitor* visitor);
+};
 class AssignStatement : public Statement
 {
 public:
@@ -132,6 +141,7 @@ public:
     virtual void executeBlock(BlockStatement* statement) = 0;
     virtual void executeCommand(CommandStatement *statement) = 0;
     virtual void executeIf(IfStatement* statement) = 0;
+    virtual void executeWhile(WhileStatement* statement) = 0;
     virtual void executeAssign(AssignStatement* statement) = 0;
 };
 
@@ -154,6 +164,7 @@ private:
     Statement* statement();
     Statement* commandStatement();
     Statement* ifStatement();
+    Statement* whileStatement();
     Statement* assignStatement();
     Statement* blockStatement();
     Statement* actionStatement();
