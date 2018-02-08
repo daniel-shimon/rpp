@@ -26,7 +26,7 @@ enum TokenType
 
     Print, Exit,
 
-    Semicolon, NewLine, EndOfFile,
+    Semicolon, NewLine, EndOfFile, Indent, Colon,
 };
 
 class Token
@@ -63,6 +63,7 @@ const map<string, TokenType> reserved = {
         {"הגדר", Def},
         {"פלוט", Print},
         {"צא", Exit},
+        {"אם", If},
         {"אלולא", If},
         {"אחרת", Else},
         {"אואם", Elif},
@@ -71,8 +72,8 @@ const map<string, TokenType> reserved = {
         {"שונהמ", NotEquals},
         {"גדולמ", Bigger},
         {"קטןמ", Smaller},
-        {"שלילי", False},
-        {"חיובי", True},
+        {"שקר", False},
+        {"אמת", True},
         {"ריק", None},
 };
 //endregion

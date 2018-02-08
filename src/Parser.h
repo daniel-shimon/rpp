@@ -75,6 +75,14 @@ public:
     ExpressionStatement(Expression* expression): expression(expression) {};
     void accept(StatementVisitor* visitor);
 };
+class BlockStatement : public Statement
+{
+public:
+    vector<Statement*> statements;
+
+    BlockStatement(vector<Statement*> statements): statements(statements) {};
+    void accept(StatementVisitor* visitor);
+};
 class CommandStatement : public Statement
 {
 public:
@@ -82,6 +90,18 @@ public:
     Expression* expression;
 
     CommandStatement(Token* command, Expression* expression): command(command), expression(expression) {};
+    void accept(StatementVisitor* visitor);
+};
+class IfStatement : public Statement
+{
+public:
+    Expression* condition;
+    Statement* action;
+    vector<pair<Expression*, Statement*>> elifs;
+    Statement* elseAction;
+
+    IfStatement(Expression* condition, Statement* action, vector<pair<Expression*, Statement*>> elifs,
+                Statement* elseAction): condition(condition), action(action), elifs(elifs), elseAction(elseAction) {};
     void accept(StatementVisitor* visitor);
 };
 class AssignStatement : public Statement
@@ -109,7 +129,9 @@ class StatementVisitor
 {
 public:
     virtual void executeExpression(ExpressionStatement* statement) = 0;
+    virtual void executeBlock(BlockStatement* statement) = 0;
     virtual void executeCommand(CommandStatement *statement) = 0;
+    virtual void executeIf(IfStatement* statement) = 0;
     virtual void executeAssign(AssignStatement* statement) = 0;
 };
 
@@ -118,6 +140,7 @@ class Parser
 private:
     vector<Token*> tokens;
     int current = 0;
+    int indent = 0;
 
     Expression* expression();
     Expression* equality();
@@ -130,7 +153,10 @@ private:
 
     Statement* statement();
     Statement* commandStatement();
+    Statement* ifStatement();
     Statement* assignStatement();
+    Statement* blockStatement();
+    Statement* actionStatement();
 
     Token* next();
     Token* peek();
@@ -144,8 +170,6 @@ private:
 public:
     Parser(vector<Token*> tokens): tokens(tokens) {};
     vector<Statement*> parse();
-
-    ExpressionStatement *expressionStatement();
 };
 
 

@@ -61,7 +61,9 @@ public:
     Value* execute(vector<Statement*> statements);
     void executeExpression(ExpressionStatement* statement);
     void executeCommand(CommandStatement *statement);
+    void executeIf(IfStatement* statement);
     void executeAssign(AssignStatement* statement);
+    void executeBlock(BlockStatement* statement);
 
     static void runtimeError(Token* token, string message = "unsupported operator");
     static map<uint32_t, string> setupHebrew();

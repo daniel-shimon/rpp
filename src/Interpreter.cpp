@@ -118,7 +118,8 @@ Value *Interpreter::evaluateVariable(VariableExpression *variable) {
 }
 
 bool Interpreter::truthEvaluation(Value* value) {
-    return value == 0;
+    if (value->type == Bool)
+        return value->getBool();
 }
 
 bool Interpreter::equalityEvaluation(Value* first, Value* second) {
@@ -173,6 +174,18 @@ void Interpreter::executeCommand(CommandStatement *statement) {
 
 void Interpreter::executeAssign(AssignStatement *statement) {
     environment.set(*(string*)statement->token->value, evaluate(statement->value));
+}
+
+void Interpreter::executeIf(IfStatement *statement) {
+    if (truthEvaluation(evaluate(statement->condition)))
+        return statement->action->accept(this);
+
+    for (pair<Expression*, Statement*> elif : statement->elifs)
+        if (truthEvaluation(evaluate(elif.first)))
+            return elif.second->accept(this);
+
+    if (statement->elseAction != nullptr)
+        statement->elseAction->accept(this);
 }
 
 // endregion
@@ -262,6 +275,11 @@ map<uint32_t, string> Interpreter::hebrew = Interpreter::setupHebrew();
 
 void Interpreter::runtimeError(Token* token, string message) {
     throw RPPException("Runtime Error", token->errorSignature(), message);
+}
+
+void Interpreter::executeBlock(BlockStatement *statement) {
+    for (Statement* inlineStatement : statement->statements)
+        inlineStatement->accept(this);
 }
 
 void Environment::set(string name, Value *value) {

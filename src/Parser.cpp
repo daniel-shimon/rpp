@@ -75,15 +75,48 @@ Expression* Parser::primary()
 Statement *Parser::statement() {
     if (peekMatch({Print, Exit}))
         return commandStatement();
-    if (match(Identifier) && match(Assign, 1))
-        return assignStatement();
+    if (nextMatch(If))
+        return ifStatement();
 
-    return expressionStatement();
+    return assignStatement();
 }
 
-ExpressionStatement *Parser::expressionStatement()
-{
-    return new ExpressionStatement(expression());
+Statement *Parser::ifStatement() {
+    Expression* condition = expression();
+    Statement* action = actionStatement();
+
+    vector<pair<Expression*, Statement*>> elifs;
+    while (nextMatch(Elif))
+    {
+        Expression* elifCondition = expression();
+        Statement* elifAction = actionStatement();
+        pair<Expression*, Statement*> elif(elifCondition, elifAction);
+        elifs.push_back(elif);
+    }
+
+    Statement* elseAction = nullptr;
+    if (nextMatch(Else))
+        elseAction = actionStatement();
+
+    return new IfStatement(condition, action, elifs, elseAction);
+}
+
+Statement *Parser::assignStatement() {
+    Expression* first = expression();
+
+    if (match(Assign))
+    {
+        if (VariableExpression* variable = dynamic_cast<VariableExpression*>(first))
+        {
+            next();
+            Expression* value = expression();
+            return new AssignStatement(variable->token, value);
+        }
+
+        syntaxError("invalid assignment target");
+    }
+
+    return new ExpressionStatement(first);
 }
 
 Statement *Parser::commandStatement() {
@@ -91,11 +124,26 @@ Statement *Parser::commandStatement() {
     return new CommandStatement(command, expression());
 }
 
-Statement *Parser::assignStatement() {
-    Token* identifier = next();
-    next();
-    Expression* value = expression();
-    return new AssignStatement(identifier, value);
+Statement *Parser::blockStatement() {
+    indent++;
+    vector<Statement*> statements = parse();
+    indent--;
+
+    if (statements.size() == 0)
+        syntaxError("Empty code block");
+
+    return new BlockStatement(statements);
+}
+
+Statement *Parser::actionStatement() {
+    if (nextMatch(Colon))
+    {
+        if (!nextMatch(NewLine))
+            syntaxError("newline not allowed after colon");
+
+        return blockStatement();
+    }
+    return statement();
 }
 
 // endregion
@@ -115,7 +163,6 @@ Token* Parser::peek() {
 bool Parser::isAtEnd() {
     return peek()->type == EndOfFile;
 }
-
 
 bool Parser::peekMatch(initializer_list<TokenType> typesList) {
     vector<TokenType> types = vector<TokenType>(typesList.begin(), typesList.end());
@@ -163,15 +210,29 @@ vector<Statement*> Parser::parse() {
     vector<Statement*> statements;
     vector<RPPException> exceptions;
 
-    while(nextMatch(NewLine)) {}
     while (!isAtEnd())
     {
         try
         {
             while(nextMatch(NewLine)) {}
+            bool out = false;
+            for (int i = 0; i < indent; i++)
+                if (!match(Indent, i))
+                {
+                    out = true;
+                    break;
+                }
+            if (out)
+                break;
+            if (nextMatch(NewLine))
+                continue;
+
+            current += indent;
+            int startLine = peek()->line;
+
             statements.push_back(statement());
 
-            if (!peekMatch({Semicolon, NewLine, EndOfFile}))
+            if (!(peekMatch({Semicolon, NewLine, EndOfFile}) || peek()->line > startLine))
                 syntaxError();
         }
         catch (RPPException exception)
@@ -229,6 +290,14 @@ void CommandStatement::accept(StatementVisitor *visitor) {
 
 void AssignStatement::accept(StatementVisitor *visitor) {
     return visitor->executeAssign(this);
+}
+
+void IfStatement::accept(StatementVisitor *visitor) {
+    visitor->executeIf(this);
+}
+
+void BlockStatement::accept(StatementVisitor *visitor) {
+    visitor->executeBlock(this);
 }
 
 // endregion
