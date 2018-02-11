@@ -122,6 +122,23 @@ Value *Interpreter::evaluateVariable(VariableExpression *variable) {
     return value;
 }
 
+Value *Interpreter::evaluateCall(CallExpression* call) {
+    Value* callee = evaluate(call->callee);
+    callee->token = call->token;
+    FunctionValue* function = callee->getFunction();
+
+    if (function->arity == call->arguments.size() || function->arity == -1)
+    {
+        vector<Value*> arguments;
+        for (Expression* expression : call->arguments)
+            arguments.push_back(evaluate(expression));
+
+        return function->call(this, arguments);
+    }
+
+    runtimeError(call->token, "invalid argument count to " + callee->toString());
+}
+
 bool Interpreter::truthEvaluation(Value* value) {
     if (value->type == Bool)
         return value->getBool();
@@ -158,6 +175,10 @@ Value* Interpreter::execute(vector<Statement *> statements) {
         catch (Value* value)
         {
             returnValue = value;
+        }
+        catch (ReturnValue value)
+        {
+            runtimeError(value.token, "return statement from non-function");
         }
     }
     return returnValue;
@@ -205,11 +226,48 @@ void Interpreter::executeBlock(BlockStatement *statement) {
     delete newEnvironment;
 }
 
+void Interpreter::executeWhile(WhileStatement *statement) {
+    while (truthEvaluation(evaluate(statement->condition)))
+        statement->action->accept(this);
+}
+
+Value *DeclaredFunction::call(Interpreter *interpreter, vector<Value*> arguments) {
+    Environment* newEnvironment = new Environment(interpreter->environment);
+    interpreter->environment = newEnvironment;
+
+    for (int i = 0; i < argumentNames.size(); i++)
+        newEnvironment->set(argumentNames[i], arguments[i]);
+
+    Value* value = Value::None;
+    try
+    {
+        action->accept(interpreter);
+    }
+    catch (ReturnValue returnValue)
+    {
+        value = returnValue.value;
+    }
+
+    interpreter->environment = newEnvironment->getEnclosing();
+    delete newEnvironment;
+
+    return value;
+}
+
+Value *NativeFunction::call(Interpreter *interpreter, vector<Value *> arguments) {
+    Value* value = ((Value* (*)(Interpreter*, vector<Value*>))nativeCall)(interpreter, arguments);
+
+    if (value == nullptr)
+        return Value::None;
+
+    return value;
+}
+
 // endregion
 
 // region utils
 
-void Interpreter::print(Value* value, bool printNone) {
+void Interpreter::print(Value* value, bool printNone, bool printEndLine) {
     switch (value->type)
     {
         case String:
@@ -232,6 +290,8 @@ void Interpreter::print(Value* value, bool printNone) {
             else
                 return;
         }
+
+    if (printEndLine)
         cout << endl;
 }
 
@@ -294,11 +354,6 @@ void Interpreter::runtimeError(Token* token, string message) {
     throw RPPException("Runtime Error", token->errorSignature(), message);
 }
 
-void Interpreter::executeWhile(WhileStatement *statement) {
-    while (truthEvaluation(evaluate(statement->condition)))
-        statement->action->accept(this);
-}
-
 void Environment::set(string name, Value *value) {
     if (enclosing == nullptr || enclosing->get(name) == nullptr)
         variables[name] = value;
@@ -318,6 +373,15 @@ Environment *Environment::getEnclosing() {
 }
 
 // endregion
+
+vector<pair<string, Value*>> Interpreter::globals = {
+        {"קלוט", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+            interpreter->print(arguments[0], false, false);
+            string input;
+            getline(cin, input);
+            return new Value(input);
+        }))},
+};
 
 // region values
 
@@ -341,6 +405,12 @@ string Value::getString() {
     return *(string*)value;
 }
 
+FunctionValue* Value::getFunction() {
+    if (type != Function)
+        Interpreter::runtimeError(token, "value " + toString() + " is not a Function");
+    return (FunctionValue*)value;
+}
+
 string Value::toString() {
     switch (type)
     {
@@ -354,7 +424,19 @@ string Value::toString() {
             return "false";
         case String:
             return "'" + Interpreter::englishify(this) + "'";
+        case Function: {
+            int arity = getFunction()->arity;
+
+            if (arity == -1)
+                return "function(...)";
+
+            return "function(" + to_string(arity) + " arguments)";
+        }
     }
 }
+
+// endregion
+
+// region globals
 
 // endregion

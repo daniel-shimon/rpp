@@ -60,6 +60,17 @@ public:
     VariableExpression(Token* token) : token(token) {};
     Value* accept(ExpressionVisitor* visitor);
 };
+class CallExpression: public Expression
+{
+public:
+    Token* token;
+    Expression* callee;
+    vector<Expression*> arguments;
+
+    CallExpression(Token* token, Expression* callee, vector<Expression*> arguments) :
+            token(token), callee(callee), arguments(arguments) {};
+    Value* accept(ExpressionVisitor* visitor);
+};
 
 class Statement
 {
@@ -132,6 +143,7 @@ public:
     virtual Value* evaluateLiteral(LiteralExpression* literal) = 0;
     virtual Value* evaluateGrouping(GroupingExpression* grouping) = 0;
     virtual Value* evaluateVariable(VariableExpression* variable) = 0;
+    virtual Value* evaluateCall(CallExpression* variable) = 0;
 };
 
 class StatementVisitor
@@ -159,6 +171,7 @@ private:
     Expression* multiplication();
     Expression* power();
     Expression* unary();
+    Expression* call();
     Expression* primary();
 
     Statement* statement();

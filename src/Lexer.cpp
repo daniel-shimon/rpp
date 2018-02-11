@@ -17,8 +17,8 @@ vector<Token*> Lexer::scan()
         uint32_t ch = next();
         switch (ch)
         {
-            case '(': addToken(RightParen, "("); break;
-            case ')': addToken(LeftParen, ")"); break;
+            case '(': addToken(OpenParen, "("); break;
+            case ')': addToken(CloseParen, ")"); break;
             case '+': addToken(Plus, "+"); break;
             case '-': addToken(Minus, "-"); break;
             case '>': addToken(Bigger, ">"); break;
@@ -26,6 +26,7 @@ vector<Token*> Lexer::scan()
             case ';': addToken(Semicolon, ";"); break;
             case ':': addToken(Colon, ":"); break;
             case '\t': addToken(Indent, "tab"); break;
+            case ',': addToken(Comma, ","); break;
             case '!':
                 if (nextMatches('='))
                     addToken(NotEquals, "!=");

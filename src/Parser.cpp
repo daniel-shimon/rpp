@@ -45,7 +45,31 @@ Expression* Parser::unary()
         return new UnaryExpression(op, expression);
     }
 
-    return primary();
+    return call();
+}
+
+Expression *Parser::call()
+{
+    Expression* callee = primary();
+
+    while (match(OpenParen))
+    {
+        Token* token = next();
+        vector<Expression*> arguments;
+
+        if (!match(CloseParen))
+            do {
+                arguments.push_back(expression());
+            }
+            while (nextMatch(Comma));
+
+        if (!nextMatch(CloseParen))
+            syntaxError("missing '(' at end of function call");
+
+        callee = new CallExpression(token, callee, arguments);
+    }
+
+    return callee;
 }
 
 Expression* Parser::primary()
@@ -56,13 +80,13 @@ Expression* Parser::primary()
     if (match(Identifier))
         return new VariableExpression(next());
 
-    if (nextMatch(RightParen))
+    if (nextMatch(OpenParen))
     {
         Expression* value = expression();
-        if (nextMatch(LeftParen))
+        if (nextMatch(CloseParen))
             return new GroupingExpression(value);
 
-        syntaxError("missing (");
+        syntaxError("missing '('");
     }
 
     syntaxError();
@@ -201,6 +225,7 @@ bool Parser::nextMatch(TokenType type) {
 
     return false;
 }
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wincompatible-pointer-types"
 Expression* Parser::parseBinary(Expression* (Parser::*parseFunction)(), initializer_list<TokenType> typesList) {
@@ -289,6 +314,10 @@ Value* BinaryExpression::accept(ExpressionVisitor* visitor) {
 
 Value *VariableExpression::accept(ExpressionVisitor *visitor) {
     return visitor->evaluateVariable(this);
+}
+
+Value *CallExpression::accept(ExpressionVisitor *visitor) {
+    return visitor->evaluateCall(this);
 }
 
 void ExpressionStatement::accept(StatementVisitor* visitor) {

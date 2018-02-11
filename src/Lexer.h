@@ -16,7 +16,7 @@ using namespace std;
 
 enum TokenType
 {
-    RightParen, LeftParen, Plus, Minus, Divide, Multiply, Modulo,
+    OpenParen, CloseParen, Plus, Minus, Divide, Multiply, Modulo,
 
     Identifier, StringLiteral, NumberLiteral, False, True, None,
 
@@ -24,9 +24,9 @@ enum TokenType
 
     Bigger, Smaller, BiggerEq, SmallerEq, Assign,
 
-    Print, Exit,
+    Print, Exit, Return,
 
-    Semicolon, NewLine, EndOfFile, Indent, Colon,
+    Semicolon, NewLine, EndOfFile, Indent, Colon, Comma,
 };
 
 class Token
@@ -64,6 +64,7 @@ const map<string, TokenType> reserved = {
         {"הגדר", Def},
         {"פלוט", Print},
         {"צא", Exit},
+        {"החזר", Return},
         {"אם", If},
         {"אלולא", If},
         {"אחרת", Else},

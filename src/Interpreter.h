@@ -11,9 +11,11 @@
 
 #include "Parser.h"
 
+class FunctionValue;
+
 enum ValueType
 {
-    String, Number, Bool, NoneType,
+    String, Number, Bool, NoneType, Function,
 };
 
 class Value
@@ -30,11 +32,19 @@ public:
     Value(double* value): type(Number), value(value) {};
     Value(string value): type(String), value(new string(value)) {};
     Value(string* value): type(String), value(value) {};
+    Value(FunctionValue* value): type(Function), value(value) {};
     Value(): type(NoneType), value(nullptr) {};
     double getNumber();
     bool getBool();
     string getString();
+    FunctionValue* getFunction();
     string toString();
+};
+
+struct ReturnValue
+{
+    Token* token;
+    Value* value;
 };
 
 class Environment
@@ -53,23 +63,25 @@ public:
     }
 };
 
-class Interpreter : ExpressionVisitor, StatementVisitor {
-private:
+class Interpreter : public ExpressionVisitor, public StatementVisitor {
+public:
     static map<uint32_t, string> hebrew;
+    static vector<pair<string, Value*>> globals;
     Environment* environment;
 
-    bool truthEvaluation(Value* value);
-    bool equalityEvaluation(Value *first, Value *second);
-public:
     Interpreter() {
         environment = new Environment();
+        for (pair<string, Value*> variable : globals)
+            environment->set(variable.first, variable.second);
     };
+
     Value* evaluate(Expression* expression);
     Value* evaluateBinary(BinaryExpression* binary);
     Value* evaluateUnary(UnaryExpression* unary);
     Value* evaluateLiteral(LiteralExpression* literal);
     Value* evaluateGrouping(GroupingExpression* grouping);
     Value* evaluateVariable(VariableExpression* variable);
+    Value* evaluateCall(CallExpression* call);
 
     Value* execute(vector<Statement*> statements);
     void executeExpression(ExpressionStatement* statement);
@@ -79,12 +91,45 @@ public:
     void executeAssign(AssignStatement* statement);
     void executeBlock(BlockStatement* statement);
 
+    static bool truthEvaluation(Value* value);
+    static bool equalityEvaluation(Value *first, Value *second);
     static void runtimeError(Token* token, string message = "unsupported operator");
     static map<uint32_t, string> setupHebrew();
-    static void print(Value* value, bool printNone = true);
-
+    static void print(Value* value, bool printNone = true, bool printEndLine = true);
     static string englishify(Value *value);
 };
 
+class FunctionValue
+{
+public:
+    int arity;
+
+    virtual Value* call(Interpreter* interpreter, vector<Value*> arguments) = 0;
+};
+
+class DeclaredFunction : public FunctionValue
+{
+private:
+    vector<string> argumentNames;
+    Statement* action;
+
+public:
+    DeclaredFunction(vector<string> argumentNames, Statement* actions) :
+            argumentNames(argumentNames), action(actions) {
+        arity = argumentNames.size();
+    };
+    Value* call(Interpreter* interpreter, vector<Value*> arguments);
+};
+
+class NativeFunction : public FunctionValue
+{
+private:
+    void* nativeCall;
+public:
+    NativeFunction(int arity, Value* (nativeCall)(Interpreter*, vector<Value*>)) : nativeCall((void*)nativeCall) {
+        this->arity = arity;
+    };
+    Value* call(Interpreter* interpreter, vector<Value*> arguments);
+};
 
 #endif //RSHI_INTERPRETER_H
