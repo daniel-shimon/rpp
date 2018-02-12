@@ -8,6 +8,7 @@ Interpreted, untyped, object-oriented and super cool
 ```
 
 ## Variables, comparison and logic
+
 ```
 מספר_חשוב = 23
 אם מספר_חשוב גדולמ 20:
@@ -16,3 +17,18 @@ Interpreted, untyped, object-oriented and super cool
 אחרת אם אמת או שקר פלוט 'סבבה'
 ```
 
+## Loops and functions
+
+```
+אקו = פעולה(חזרות):
+    הודעה = קלוט('')
+    מספר = 0
+    כלעוד מספר קטןמ חזרות:
+        פלוט הודעה
+        מספר = מספר + 1
+
+// חזרה אחת
+אקו(1)
+// שתי חזרות
+אקו(2)
+```
