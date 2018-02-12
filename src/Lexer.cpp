@@ -165,7 +165,7 @@ void Lexer::scanIdentifier() {
     string::iterator start = iterator;
     utf8::prior(start, this->start);
 
-    while (isAlpha(peek()) || isDigit(peek()))
+    while (isAlpha(peek()) || isDigit(peek()) || peek() == '_')
         next();
 
     string value = string(start, iterator);

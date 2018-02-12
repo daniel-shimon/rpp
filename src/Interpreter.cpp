@@ -450,6 +450,11 @@ vector<pair<string, Value*>> Interpreter::globals = {
         {"טקסט", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
             return new Value(arguments[0]->toString());
         }))},
+        {"מספר", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+            if (arguments[0]->type == Number)
+                return new Value(arguments[0]->getNumber());
+            return new Value(stod(arguments[0]->getString()));
+        }))},
 };
 
 // endregion
