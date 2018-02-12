@@ -9,6 +9,7 @@
 #include <vector>
 #include <map>
 #include <exception>
+#include <algorithm>
 
 #include "utf8.h"
 
@@ -61,7 +62,7 @@ public:
 const map<string, TokenType> reserved = {
         {"וגם", And},
         {"או", Or},
-        {"הגדר", Def},
+        {"פעולה", Def},
         {"פלוט", Print},
         {"צא", Exit},
         {"החזר", Return},

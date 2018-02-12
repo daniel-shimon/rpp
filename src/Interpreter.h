@@ -43,8 +43,11 @@ public:
 
 struct ReturnValue
 {
+public:
     Token* token;
     Value* value;
+
+    ReturnValue(Token* token, Value* value): token(token), value(value) {};
 };
 
 class Environment
@@ -52,9 +55,10 @@ class Environment
 private:
     map<string, Value*> variables;
     Environment* enclosing;
+    bool strict;
 
 public:
-    Environment(Environment* enclosing = nullptr) : enclosing(enclosing) {};
+    Environment(Environment* enclosing = nullptr, bool strict = false) : enclosing(enclosing), strict(strict) {};
     void set(string name, Value* value);
     Value* get(string name);
     Environment* getEnclosing();
@@ -82,6 +86,7 @@ public:
     Value* evaluateGrouping(GroupingExpression* grouping);
     Value* evaluateVariable(VariableExpression* variable);
     Value* evaluateCall(CallExpression* call);
+    Value* evaluateFunction(FunctionExpression* call);
 
     Value* execute(vector<Statement*> statements);
     void executeExpression(ExpressionStatement* statement);

@@ -10,6 +10,7 @@
 class ExpressionVisitor;
 class StatementVisitor;
 class Value;
+class Statement;
 
 class Expression
 {
@@ -69,6 +70,17 @@ public:
 
     CallExpression(Token* token, Expression* callee, vector<Expression*> arguments) :
             token(token), callee(callee), arguments(arguments) {};
+    Value* accept(ExpressionVisitor* visitor);
+};
+class FunctionExpression: public Expression
+{
+public:
+    Token* token;
+    vector<Token*> arguments;
+    Statement* action;
+
+    FunctionExpression(Token* token, vector<Token*> arguments, Statement* action) :
+            token(token), arguments(arguments), action(action) {};
     Value* accept(ExpressionVisitor* visitor);
 };
 
@@ -144,6 +156,7 @@ public:
     virtual Value* evaluateGrouping(GroupingExpression* grouping) = 0;
     virtual Value* evaluateVariable(VariableExpression* variable) = 0;
     virtual Value* evaluateCall(CallExpression* variable) = 0;
+    virtual Value* evaluateFunction(FunctionExpression* variable) = 0;
 };
 
 class StatementVisitor
@@ -165,6 +178,7 @@ private:
     int indent = 0;
 
     Expression* expression();
+    Expression* function();
     Expression* equality();
     Expression* comparison();
     Expression* addition();

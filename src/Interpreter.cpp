@@ -139,6 +139,15 @@ Value *Interpreter::evaluateCall(CallExpression* call) {
     runtimeError(call->token, "invalid argument count to " + callee->toString());
 }
 
+Value *Interpreter::evaluateFunction(FunctionExpression *call) {
+    vector<string> arguments;
+
+    for (Token* token : call->arguments)
+        arguments.push_back(*(string*)token->value);
+
+    return new Value(new DeclaredFunction(arguments, call->action));
+}
+
 bool Interpreter::truthEvaluation(Value* value) {
     if (value->type == Bool)
         return value->getBool();
@@ -192,11 +201,14 @@ void Interpreter::executeCommand(CommandStatement *statement) {
     switch (statement->command->type)
     {
         case Print:
-            print(evaluate(statement->expression));
-            break;
+            return print(evaluate(statement->expression));
         case Exit:
-            exit((int)evaluate(statement->expression)->getNumber());
+            return exit((int)evaluate(statement->expression)->getNumber());
+        case Return:
+            throw ReturnValue(statement->command, evaluate(statement->expression));
     }
+
+    runtimeError(statement->command, "unknown command");
 }
 
 void Interpreter::executeAssign(AssignStatement *statement) {
@@ -232,7 +244,7 @@ void Interpreter::executeWhile(WhileStatement *statement) {
 }
 
 Value *DeclaredFunction::call(Interpreter *interpreter, vector<Value*> arguments) {
-    Environment* newEnvironment = new Environment(interpreter->environment);
+    Environment* newEnvironment = new Environment(interpreter->environment, true);
     interpreter->environment = newEnvironment;
 
     for (int i = 0; i < argumentNames.size(); i++)
@@ -275,20 +287,13 @@ void Interpreter::print(Value* value, bool printNone, bool printEndLine) {
             cout << englishify(value);
             break;
         }
-        case Number:
-            cout << value->getNumber();
-            break;
-        case Bool:
-        {
-            string v = value->getBool() ? "True" : "False";
-            cout << v;
-            break;
-        }
         case NoneType:
             if (printNone)
-                cout << "None";
+                cout << value->toString();
             else
                 return;
+        default:
+            cout << value->toString();
         }
 
     if (printEndLine)
@@ -355,7 +360,7 @@ void Interpreter::runtimeError(Token* token, string message) {
 }
 
 void Environment::set(string name, Value *value) {
-    if (enclosing == nullptr || enclosing->get(name) == nullptr)
+    if (strict || enclosing == nullptr || enclosing->get(name) == nullptr)
         variables[name] = value;
     else
         enclosing->set(name, value);
@@ -373,15 +378,6 @@ Environment *Environment::getEnclosing() {
 }
 
 // endregion
-
-vector<pair<string, Value*>> Interpreter::globals = {
-        {"קלוט", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
-            interpreter->print(arguments[0], false, false);
-            string input;
-            getline(cin, input);
-            return new Value(input);
-        }))},
-};
 
 // region values
 
@@ -416,8 +412,12 @@ string Value::toString() {
     {
         case NoneType:
             return "none";
-        case Number:
+        case Number: {
+            double value = getNumber();
+            if ((int)value == value)
+                return to_string((int)value);
             return to_string(getNumber());
+        }
         case Bool:
             if (getBool())
                 return "true";
@@ -429,7 +429,8 @@ string Value::toString() {
 
             if (arity == -1)
                 return "function(...)";
-
+            if (arity == 1)
+                return "function(" + to_string(arity) + " argument)";
             return "function(" + to_string(arity) + " arguments)";
         }
     }
@@ -438,5 +439,17 @@ string Value::toString() {
 // endregion
 
 // region globals
+
+vector<pair<string, Value*>> Interpreter::globals = {
+        {"קלוט", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+            interpreter->print(arguments[0], false, false);
+            string input;
+            getline(cin, input);
+            return new Value(input);
+        }))},
+        {"טקסט", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+            return new Value(arguments[0]->toString());
+        }))},
+};
 
 // endregion

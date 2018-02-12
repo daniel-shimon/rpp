@@ -8,7 +8,31 @@
 
 Expression* Parser::expression()
 {
+    if (nextMatch(Def))
+        return function();
     return parseBinary(equality, {And, Or});
+}
+
+Expression *Parser::function()
+{
+    if (match(OpenParen))
+    {
+        Token* token = next();
+        vector<Token*> arguments;
+
+        if (match(Identifier))
+            do
+                arguments.push_back(next());
+            while (nextMatch(Comma) && match(Identifier));
+
+        if (!nextMatch(CloseParen))
+            syntaxError("missing '(' at end of argument list");
+
+        Statement* action = actionStatement();
+        return new FunctionExpression(token, arguments, action);
+    }
+
+    syntaxError("missing argument list after function declaration");
 }
 
 Expression* Parser::equality()
@@ -64,7 +88,7 @@ Expression *Parser::call()
             while (nextMatch(Comma));
 
         if (!nextMatch(CloseParen))
-            syntaxError("missing '(' at end of function call");
+            syntaxError("missing '(' at end of argument list");
 
         callee = new CallExpression(token, callee, arguments);
     }
@@ -97,7 +121,7 @@ Expression* Parser::primary()
 // region statements
 
 Statement *Parser::statement() {
-    if (peekMatch({Print, Exit}))
+    if (peekMatch({Print, Exit, Return}))
         return commandStatement();
     if (nextMatch(If))
         return ifStatement();
@@ -342,6 +366,10 @@ void BlockStatement::accept(StatementVisitor *visitor) {
 
 void WhileStatement::accept(StatementVisitor *visitor) {
     visitor->executeWhile(this);
+}
+
+Value *FunctionExpression::accept(ExpressionVisitor *visitor) {
+    return visitor->evaluateFunction(this);
 }
 
 // endregion
