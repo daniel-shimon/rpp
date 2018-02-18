@@ -21,13 +21,13 @@ enum TokenType
 
     Identifier, StringLiteral, NumberLiteral, False, True, None,
 
-    And, Or, Def, If, Else, Not, Equals, NotEquals, Power, While,
+    And, Or, Def, If, Else, Not, Equals, NotEquals, Power, While, ClassDef,
 
     Bigger, Smaller, BiggerEq, SmallerEq, Assign,
 
     Print, Exit, Return,
 
-    Semicolon, NewLine, EndOfFile, Indent, Colon, Comma,
+    Semicolon, NewLine, EndOfFile, Indent, Colon, Comma, Dot,
 };
 
 class Token
@@ -78,6 +78,7 @@ const map<string, TokenType> reserved = {
         {"שקר", False},
         {"אמת", True},
         {"ריק", None},
+        {"מחלקה", ClassDef},
 };
 
 //endregion

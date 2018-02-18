@@ -125,27 +125,49 @@ Value *Interpreter::evaluateVariable(VariableExpression *variable) {
 Value *Interpreter::evaluateCall(CallExpression* call) {
     Value* callee = evaluate(call->callee);
     callee->token = call->token;
-    FunctionValue* function = callee->getFunction();
+    if (callee->type == Function) {
+        FunctionValue* function = callee->getFunction();
 
-    if (function->arity == call->arguments.size() || function->arity == -1)
-    {
-        vector<Value*> arguments;
-        for (Expression* expression : call->arguments)
-            arguments.push_back(evaluate(expression));
+        if (function->arity == call->arguments.size() || function->arity == -1)
+        {
+            vector<Value*> arguments;
+            for (Expression* expression : call->arguments)
+                arguments.push_back(evaluate(expression));
 
-        return function->call(this, arguments);
+            return function->call(this, arguments);
+        }
+
+        runtimeError(call->token, "invalid argument count to " + callee->toString());
     }
+    if (callee->type == Class)
+        return new Value(new InstanceValue(callee->getClass()));
 
-    runtimeError(call->token, "invalid argument count to " + callee->toString());
+    runtimeError(call->token, callee->toString() + "is not a function nor class");
 }
 
-Value *Interpreter::evaluateFunction(FunctionExpression *call) {
+Value *Interpreter::evaluateFunction(FunctionExpression *function) {
     vector<string> arguments;
 
-    for (Token* token : call->arguments)
+    for (Token* token : function->arguments)
         arguments.push_back(*(string*)token->value);
 
-    return new Value(new DeclaredFunction(arguments, call->action));
+    return new Value(new DeclaredFunction(arguments, function->action));
+}
+
+Value *Interpreter::evaluateClass(ClassExpression *klass) {
+    return new Value(new ClassValue(klass->definition));
+}
+
+Value *Interpreter::evaluateGet(GetExpression *get) {
+    Value* callee = evaluate(get->callee);
+    string name = *(string*)get->name->value;
+    Value* value = callee->getInstance()->attributes[name];
+
+    if (value == nullptr)
+        throw RPPException("Attribute error", get->name->errorSignature(),
+                           callee->toString() + " has not attribute " + name);
+
+    return value;
 }
 
 bool Interpreter::truthEvaluation(Value* value) {
@@ -212,7 +234,14 @@ void Interpreter::executeCommand(CommandStatement *statement) {
 }
 
 void Interpreter::executeAssign(AssignStatement *statement) {
-    environment->set(*(string*)statement->token->value, evaluate(statement->value));
+    string name = *(string*)statement->token->value;
+    Value *value = evaluate(statement->value);
+    if (value->type == Function) {
+        value->getFunction()->name = name;
+    } else if (value->type == Class) {
+        value->getClass()->name = name;
+    }
+    environment->set(name, value);
 }
 
 void Interpreter::executeIf(IfStatement *statement) {
@@ -241,6 +270,12 @@ void Interpreter::executeBlock(BlockStatement *statement) {
 void Interpreter::executeWhile(WhileStatement *statement) {
     while (truthEvaluation(evaluate(statement->condition)))
         statement->action->accept(this);
+}
+
+void Interpreter::executeSet(SetStatement *statement) {
+    Value* callee = evaluate(statement->callee);
+    Value* value = evaluate(statement->value);
+    callee->getInstance()->attributes[*(string*)statement->name->value] = value;
 }
 
 Value *DeclaredFunction::call(Interpreter *interpreter, vector<Value*> arguments) {
@@ -284,14 +319,13 @@ void Interpreter::print(Value* value, bool printNone, bool printEndLine) {
     {
         case String:
         {
-            cout << englishify(value);
+            cout << englishify(value->getString());
             break;
         }
         case NoneType:
             if (printNone)
                 cout << value->toString();
-            else
-                return;
+            break;
         default:
             cout << value->toString();
         }
@@ -300,15 +334,14 @@ void Interpreter::print(Value* value, bool printNone, bool printEndLine) {
         cout << endl;
 }
 
-string Interpreter::englishify(Value *value) {
+string Interpreter::englishify(string value) {
     string output = "";
-    string origin = value->getString();
 
-    string::iterator it = origin.begin();
-    while (it != origin.end())
+    string::iterator it = value.begin();
+    while (it != value.end())
     {
         string::iterator prev = it;
-        uint32_t ch = utf8::next(it, origin.end());
+        uint32_t ch = utf8::next(it, value.end());
         if (hebrew.count(ch) == 0)
             output += string(prev, it);
         else
@@ -407,6 +440,18 @@ FunctionValue* Value::getFunction() {
     return (FunctionValue*)value;
 }
 
+ClassValue *Value::getClass() {
+    if (type != Class)
+        Interpreter::runtimeError(token, "value " + toString() + " is not a Class");
+    return (ClassValue*)value;
+}
+
+InstanceValue *Value::getInstance() {
+    if (type != Instance)
+        Interpreter::runtimeError(token, "value " + toString() + " is not an Instance");
+    return (InstanceValue*)value;
+}
+
 string Value::toString() {
     switch (type)
     {
@@ -423,15 +468,33 @@ string Value::toString() {
                 return "true";
             return "false";
         case String:
-            return "'" + Interpreter::englishify(this) + "'";
+            return "'" + Interpreter::englishify(getString()) + "'";
         case Function: {
             int arity = getFunction()->arity;
+            string str = "function";
+            if (!getFunction()->name.empty())
+                str += "_" + Interpreter::englishify(getFunction()->name) + "(";
 
             if (arity == -1)
-                return "function(...)";
+                return str + "...)";
             if (arity == 1)
-                return "function(" + to_string(arity) + " argument)";
-            return "function(" + to_string(arity) + " arguments)";
+                return str + "1 argument)";
+
+            return str + to_string(arity) + " arguments)";
+        }
+        case Class: {
+            string str = "class";
+            if (!getClass()->name.empty())
+                str += "_" + Interpreter::englishify(getClass()->name);
+
+            return str;
+        }
+        case Instance: {
+            string str = "instance";
+            if (!getInstance()->klass->name.empty())
+                str += "_" + Interpreter::englishify(getInstance()->klass->name);
+
+            return str;
         }
     }
 }

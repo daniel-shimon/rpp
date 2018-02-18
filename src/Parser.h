@@ -11,13 +11,15 @@ class ExpressionVisitor;
 class StatementVisitor;
 class Value;
 class Statement;
+class BlockStatement;
+
+// region expressions
 
 class Expression
 {
 public:
     virtual Value* accept(ExpressionVisitor* visitor) = 0;
 };
-
 class BinaryExpression: public Expression
 {
 public:
@@ -83,13 +85,36 @@ public:
             token(token), arguments(arguments), action(action) {};
     Value* accept(ExpressionVisitor* visitor);
 };
+class ClassExpression: public Expression
+{
+public:
+    Token* token;
+    BlockStatement* definition;
+
+    ClassExpression(Token* token, BlockStatement* definition) :
+            token(token), definition(definition) {};
+    Value* accept(ExpressionVisitor* visitor);
+};
+class GetExpression: public Expression
+{
+public:
+    Expression* callee;
+    Token* name;
+
+    GetExpression(Expression* callee, Token* name) :
+            callee(callee), name(name) {};
+    Value* accept(ExpressionVisitor* visitor);
+};
+
+// endregion
+
+// region statements
 
 class Statement
 {
 public:
     virtual void accept(StatementVisitor* visitor) = 0;
 };
-
 class ExpressionStatement : public Statement
 {
 public:
@@ -145,6 +170,18 @@ public:
     AssignStatement(Token* identifier, Expression* value): token(identifier), value(value) {};
     void accept(StatementVisitor* visitor);
 };
+class SetStatement : public Statement
+{
+public:
+    Expression* callee;
+    Token* name;
+    Expression* value;
+
+    SetStatement(Expression* callee, Token* name, Expression* value): callee(callee), name(name), value(value) {};
+    void accept(StatementVisitor* visitor);
+};
+
+// endregion
 
 class ExpressionVisitor
 {
@@ -157,6 +194,8 @@ public:
     virtual Value* evaluateVariable(VariableExpression* variable) = 0;
     virtual Value* evaluateCall(CallExpression* variable) = 0;
     virtual Value* evaluateFunction(FunctionExpression* variable) = 0;
+    virtual Value* evaluateClass(ClassExpression* variable) = 0;
+    virtual Value* evaluateGet(GetExpression* variable) = 0;
 };
 
 class StatementVisitor
@@ -168,6 +207,7 @@ public:
     virtual void executeIf(IfStatement* statement) = 0;
     virtual void executeWhile(WhileStatement* statement) = 0;
     virtual void executeAssign(AssignStatement* statement) = 0;
+    virtual void executeSet(SetStatement* statement) = 0;
 };
 
 class Parser
@@ -179,6 +219,7 @@ private:
 
     Expression* expression();
     Expression* function();
+    Expression* klass();
     Expression* equality();
     Expression* comparison();
     Expression* addition();
@@ -193,8 +234,10 @@ private:
     Statement* ifStatement();
     Statement* whileStatement();
     Statement* assignStatement();
-    Statement* blockStatement();
+    BlockStatement* blockStatement(bool enableEmpty = false);
     Statement* actionStatement();
+    Statement* defStatement();
+    Statement* classStatement();
 
     Token* next();
     Token* peek();

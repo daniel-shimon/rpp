@@ -27,6 +27,7 @@ vector<Token*> Lexer::scan()
             case ':': addToken(Colon, ":"); break;
             case '\t': addToken(Indent, "tab"); break;
             case ',': addToken(Comma, ","); break;
+            case '.': addToken(Dot, "."); break;
             case '!':
                 if (nextMatches('='))
                     addToken(NotEquals, "!=");
@@ -183,12 +184,7 @@ string Token::errorSignature()
 
 string Token::errorSignature(int line, int index, string lexeme) {
     if (lexeme.size() > 0)
-    {
-        uint32_t first = utf8::peek_next(lexeme.begin(), lexeme.end());
-        if ((1488 <= first && first <= 1514))
-            reverse(lexeme.begin(), lexeme.end());
         return "at line " + to_string(line) + " index " + to_string(index) + " ('" + lexeme + "')";
-    }
     return "at line " + to_string(line) + " index " + to_string(index);
 }
 

@@ -64,7 +64,7 @@ int main(int argC, char** argV)
         return 0;
     }
 
-    if (argC == 2)
+    if (argC == 2 && argV[1][0] != '-')
     {
         ifstream file(argV[1]);
         if (!file.is_open())

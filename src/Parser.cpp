@@ -10,6 +10,8 @@ Expression* Parser::expression()
 {
     if (nextMatch(Def))
         return function();
+    if (nextMatch(ClassDef))
+        return klass();
     return parseBinary(equality, {And, Or});
 }
 
@@ -33,6 +35,17 @@ Expression *Parser::function()
     }
 
     syntaxError("missing argument list after function declaration");
+}
+
+Expression *Parser::klass()
+{
+    if (nextMatch(Colon) && match(NewLine)) {
+        Token* token = next();
+        BlockStatement* definition = blockStatement(true);
+        return new ClassExpression(token, definition);
+    }
+
+    syntaxError("bad class declaration");
 }
 
 Expression* Parser::equality()
@@ -76,21 +89,31 @@ Expression *Parser::call()
 {
     Expression* callee = primary();
 
-    while (match(OpenParen))
+    while (true)
     {
-        Token* token = next();
-        vector<Expression*> arguments;
+        if (match(OpenParen))
+        {
+            Token* token = next();
+            vector<Expression*> arguments;
 
-        if (!match(CloseParen))
-            do {
-                arguments.push_back(expression());
-            }
-            while (nextMatch(Comma));
+            if (!match(CloseParen))
+                do {
+                    arguments.push_back(expression());
+                }
+                while (nextMatch(Comma));
 
-        if (!nextMatch(CloseParen))
-            syntaxError("missing '(' at end of argument list");
+            if (!nextMatch(CloseParen))
+                syntaxError("missing '(' at end of argument list");
 
-        callee = new CallExpression(token, callee, arguments);
+            callee = new CallExpression(token, callee, arguments);
+        } else if (nextMatch(Dot))
+        {
+            if (!match(Identifier))
+                syntaxError("missing identifier after '.'");
+
+            callee = new GetExpression(callee, next());
+        } else
+            break;
     }
 
     return callee;
@@ -127,6 +150,10 @@ Statement *Parser::statement() {
         return ifStatement();
     if (nextMatch(While))
         return whileStatement();
+    if (match(Identifier, 1) && nextMatch(Def))
+        return defStatement();
+    if (match(Identifier, 1) && nextMatch(ClassDef))
+        return classStatement();
 
     return assignStatement();
 }
@@ -163,13 +190,16 @@ Statement *Parser::whileStatement() {
 Statement *Parser::assignStatement() {
     Expression* first = expression();
 
-    if (match(Assign))
+    if (nextMatch(Assign))
     {
         if (VariableExpression* variable = dynamic_cast<VariableExpression*>(first))
         {
-            next();
             Expression* value = expression();
             return new AssignStatement(variable->token, value);
+        } else if (GetExpression* get = dynamic_cast<GetExpression*>(first))
+        {
+            Expression* value = expression();
+            return new SetStatement(get->callee, get->name, value);
         }
 
         syntaxError("invalid assignment target");
@@ -183,12 +213,12 @@ Statement *Parser::commandStatement() {
     return new CommandStatement(command, expression());
 }
 
-Statement *Parser::blockStatement() {
+BlockStatement *Parser::blockStatement(bool enableEmpty) {
     indent++;
     vector<Statement*> statements = parse();
     indent--;
 
-    if (statements.size() == 0)
+    if (!enableEmpty && statements.size() == 0)
         syntaxError("Empty code block");
 
     return new BlockStatement(statements);
@@ -203,6 +233,20 @@ Statement *Parser::actionStatement() {
         return blockStatement();
     }
     return statement();
+}
+
+Statement *Parser::defStatement() {
+    Token* name = next();
+    Expression* value = function();
+
+    return new AssignStatement(name, value);
+}
+
+Statement *Parser::classStatement() {
+    Token* name = next();
+    Expression* value = klass();
+
+    return new AssignStatement(name, value);
 }
 
 // endregion
@@ -368,8 +412,20 @@ void WhileStatement::accept(StatementVisitor *visitor) {
     visitor->executeWhile(this);
 }
 
+void SetStatement::accept(StatementVisitor *visitor) {
+    visitor->executeSet(this);
+}
+
 Value *FunctionExpression::accept(ExpressionVisitor *visitor) {
     return visitor->evaluateFunction(this);
+}
+
+Value *ClassExpression::accept(ExpressionVisitor *visitor) {
+    return visitor->evaluateClass(this);
+}
+
+Value *GetExpression::accept(ExpressionVisitor *visitor) {
+    return visitor->evaluateGet(this);
 }
 
 // endregion

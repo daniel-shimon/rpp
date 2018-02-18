@@ -11,13 +11,17 @@
 
 #include "Parser.h"
 
+class Interpreter;
 class FunctionValue;
+class ClassValue;
+class InstanceValue;
+
+// region values
 
 enum ValueType
 {
-    String, Number, Bool, NoneType, Function,
+    String, Number, Bool, NoneType, Function, Class, Instance,
 };
-
 class Value
 {
 public:
@@ -33,14 +37,17 @@ public:
     Value(string value): type(String), value(new string(value)) {};
     Value(string* value): type(String), value(value) {};
     Value(FunctionValue* value): type(Function), value(value) {};
+    Value(ClassValue* value): type(Class), value(value) {};
+    Value(InstanceValue* value): type(Instance), value(value) {};
     Value(): type(NoneType), value(nullptr) {};
     double getNumber();
     bool getBool();
     string getString();
     FunctionValue* getFunction();
+    ClassValue* getClass();
+    InstanceValue* getInstance();
     string toString();
 };
-
 struct ReturnValue
 {
 public:
@@ -49,7 +56,30 @@ public:
 
     ReturnValue(Token* token, Value* value): token(token), value(value) {};
 };
+class FunctionValue
+{
+public:
+    int arity;
+    string name;
 
+    virtual Value* call(Interpreter* interpreter, vector<Value*> arguments) = 0;
+};
+class ClassValue
+{
+public:
+    string name;
+    BlockStatement* definition;
+
+    ClassValue(BlockStatement* definition) : definition(definition) {};
+};
+class InstanceValue
+{
+public:
+    ClassValue* klass;
+    map<string, Value*> attributes;
+
+    InstanceValue(ClassValue* klass) : klass(klass) {};
+};
 class Environment
 {
 private:
@@ -66,6 +96,31 @@ public:
         enclosing = nullptr;
     }
 };
+class DeclaredFunction : public FunctionValue
+{
+private:
+    vector<string> argumentNames;
+    Statement* action;
+
+public:
+    DeclaredFunction(vector<string> argumentNames, Statement* actions) :
+            argumentNames(argumentNames), action(actions) {
+        arity = argumentNames.size();
+    };
+    Value* call(Interpreter* interpreter, vector<Value*> arguments);
+};
+class NativeFunction : public FunctionValue
+{
+private:
+    void* nativeCall;
+public:
+    NativeFunction(int arity, Value* (nativeCall)(Interpreter*, vector<Value*>)) : nativeCall((void*)nativeCall) {
+        this->arity = arity;
+    };
+    Value* call(Interpreter* interpreter, vector<Value*> arguments);
+};
+
+// endregion
 
 class Interpreter : public ExpressionVisitor, public StatementVisitor {
 public:
@@ -86,7 +141,9 @@ public:
     Value* evaluateGrouping(GroupingExpression* grouping);
     Value* evaluateVariable(VariableExpression* variable);
     Value* evaluateCall(CallExpression* call);
-    Value* evaluateFunction(FunctionExpression* call);
+    Value* evaluateFunction(FunctionExpression* function);
+    Value* evaluateClass(ClassExpression* call);
+    Value* evaluateGet(GetExpression* call);
 
     Value* execute(vector<Statement*> statements);
     void executeExpression(ExpressionStatement* statement);
@@ -95,46 +152,14 @@ public:
     void executeWhile(WhileStatement* statement);
     void executeAssign(AssignStatement* statement);
     void executeBlock(BlockStatement* statement);
+    void executeSet(SetStatement* statement);
 
     static bool truthEvaluation(Value* value);
     static bool equalityEvaluation(Value *first, Value *second);
     static void runtimeError(Token* token, string message = "unsupported operator");
     static map<uint32_t, string> setupHebrew();
     static void print(Value* value, bool printNone = true, bool printEndLine = true);
-    static string englishify(Value *value);
-};
-
-class FunctionValue
-{
-public:
-    int arity;
-
-    virtual Value* call(Interpreter* interpreter, vector<Value*> arguments) = 0;
-};
-
-class DeclaredFunction : public FunctionValue
-{
-private:
-    vector<string> argumentNames;
-    Statement* action;
-
-public:
-    DeclaredFunction(vector<string> argumentNames, Statement* actions) :
-            argumentNames(argumentNames), action(actions) {
-        arity = argumentNames.size();
-    };
-    Value* call(Interpreter* interpreter, vector<Value*> arguments);
-};
-
-class NativeFunction : public FunctionValue
-{
-private:
-    void* nativeCall;
-public:
-    NativeFunction(int arity, Value* (nativeCall)(Interpreter*, vector<Value*>)) : nativeCall((void*)nativeCall) {
-        this->arity = arity;
-    };
-    Value* call(Interpreter* interpreter, vector<Value*> arguments);
+    static string englishify(string value);
 };
 
 #endif //RSHI_INTERPRETER_H
