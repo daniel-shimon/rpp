@@ -5,15 +5,7 @@
 #ifndef RSHI_LEXER_H
 #define RSHI_LEXER_H
 
-#include <string>
-#include <vector>
-#include <map>
-#include <exception>
-#include <algorithm>
-
-#include "utf8.h"
-
-using namespace std;
+#include "Hebrew.h"
 
 enum TokenType
 {

@@ -2,6 +2,8 @@
 // Created by Daniel Shimon on 2/5/2018.
 //
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCUnusedStructInspection"
 #ifndef RSHI_INTERPRETER_H
 #define RSHI_INTERPRETER_H
 
@@ -68,9 +70,11 @@ class ClassValue
 {
 public:
     string name;
-    BlockStatement* definition;
+    int initArity;
+    map<string, Value*> staticAttributes, methods;
 
-    ClassValue(BlockStatement* definition) : definition(definition) {};
+    ClassValue(map<string, Value*> staticAttributes, map<string, Value*> methods, int initArity) :
+            staticAttributes(staticAttributes), methods(methods), initArity(initArity) {};
 };
 class InstanceValue
 {
@@ -119,13 +123,26 @@ public:
     };
     Value* call(Interpreter* interpreter, vector<Value*> arguments);
 };
+class BoundFunction : public FunctionValue
+{
+private:
+    Value* self;
+    FunctionValue* function;
+public:
+    BoundFunction(Value* self, FunctionValue* function, string name) : self(self), function(function) {
+        this->arity = function->arity;
+        this->name = "bound_" + name;
+    };
+    Value* call(Interpreter* interpreter, vector<Value*> arguments);
+};
 
 // endregion
 
 class Interpreter : public ExpressionVisitor, public StatementVisitor {
 public:
-    static map<uint32_t, string> hebrew;
     static vector<pair<string, Value*>> globals;
+    string initString = "__התחל__";
+    string selfString = "אני";
     Environment* environment;
 
     Interpreter() {
@@ -157,9 +174,9 @@ public:
     static bool truthEvaluation(Value* value);
     static bool equalityEvaluation(Value *first, Value *second);
     static void runtimeError(Token* token, string message = "unsupported operator");
-    static map<uint32_t, string> setupHebrew();
     static void print(Value* value, bool printNone = true, bool printEndLine = true);
-    static string englishify(string value);
 };
 
 #endif //RSHI_INTERPRETER_H
+
+#pragma clang diagnostic pop

@@ -10,8 +10,7 @@ Lexer::Lexer(string* source)
     end = source->end();
 }
 
-vector<Token*> Lexer::scan()
-{
+vector<Token*> Lexer::scan() {
     while (iterator < end)
     {
         uint32_t ch = next();
@@ -80,7 +79,7 @@ vector<Token*> Lexer::scan()
             default:
                 if (isDigit(ch))
                     scanNumber();
-                else if (isAlpha(ch))
+                else if (isAlpha(ch) || ch == '_')
                     scanIdentifier();
                 else
                     throw RPPException("unexpected Character", Token::errorSignature(line, index), string(1, (char)ch));
@@ -177,14 +176,13 @@ void Lexer::scanIdentifier() {
         addToken(Identifier, value, new string(value));
 }
 
-string Token::errorSignature()
-{
+string Token::errorSignature() {
     return Token::errorSignature(line, index, lexeme);
 }
 
 string Token::errorSignature(int line, int index, string lexeme) {
     if (lexeme.size() > 0)
-        return "at line " + to_string(line) + " index " + to_string(index) + " ('" + lexeme + "')";
+        return "at line " + to_string(line) + " index " + to_string(index) + " ('" + Hebrew::englishify(lexeme) + "')";
     return "at line " + to_string(line) + " index " + to_string(index);
 }
 

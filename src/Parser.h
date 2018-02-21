@@ -11,7 +11,7 @@ class ExpressionVisitor;
 class StatementVisitor;
 class Value;
 class Statement;
-class BlockStatement;
+class AssignStatement;
 
 // region expressions
 
@@ -89,10 +89,10 @@ class ClassExpression: public Expression
 {
 public:
     Token* token;
-    BlockStatement* definition;
+    vector<AssignStatement*> actions;
 
-    ClassExpression(Token* token, BlockStatement* definition) :
-            token(token), definition(definition) {};
+    ClassExpression(Token* token, vector<AssignStatement*> actions) :
+            token(token), actions(actions) {};
     Value* accept(ExpressionVisitor* visitor);
 };
 class GetExpression: public Expression
@@ -245,6 +245,7 @@ private:
     bool isAtEnd();
     bool match(TokenType type, int offset = 0);
     bool peekMatch(initializer_list<TokenType> types);
+    bool nextIndented();
     void syntaxError(string message = "unexpected symbol");
 
     Expression* parseBinary(Expression* (Parser::*parseFunction)(), initializer_list<TokenType> typesList);

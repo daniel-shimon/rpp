@@ -117,7 +117,7 @@ Value *Interpreter::evaluateVariable(VariableExpression *variable) {
 
     if (value == nullptr)
         throw RPPException("Name error", variable->token->errorSignature(),
-                           *(string*)variable->token->value + " is not defined");
+                           Hebrew::englishify(*(string*)variable->token->value) + " is not defined");
 
     return value;
 }
@@ -125,24 +125,38 @@ Value *Interpreter::evaluateVariable(VariableExpression *variable) {
 Value *Interpreter::evaluateCall(CallExpression* call) {
     Value* callee = evaluate(call->callee);
     callee->token = call->token;
+    vector<Value*> arguments;
+    for (Expression* expression : call->arguments)
+        arguments.push_back(evaluate(expression));
     if (callee->type == Function) {
         FunctionValue* function = callee->getFunction();
 
         if (function->arity == call->arguments.size() || function->arity == -1)
-        {
-            vector<Value*> arguments;
-            for (Expression* expression : call->arguments)
-                arguments.push_back(evaluate(expression));
-
             return function->call(this, arguments);
-        }
 
         runtimeError(call->token, "invalid argument count to " + callee->toString());
     }
-    if (callee->type == Class)
-        return new Value(new InstanceValue(callee->getClass()));
+    if (callee->type == Class) {
+        Value* instance = new Value(new InstanceValue(callee->getClass()));
+        map<string, Value*> methods;
+        for (pair<string, Value*> method : callee->getClass()->methods)
+            methods[method.first] = new Value(
+                    new BoundFunction(instance, method.second->getFunction(), method.first));
+        instance->getInstance()->attributes.insert(methods.begin(), methods.end());
 
-    runtimeError(call->token, callee->toString() + "is not a function nor class");
+        if (Value* init = methods[initString]) {
+            int initArity = instance->getInstance()->klass->initArity;
+            if (initArity == call->arguments.size() || initArity == -1)
+                init->getFunction()->call(this, arguments);
+            else
+                runtimeError(call->token, "invalid argument count to " +
+                        callee->toString() + " constructor " + init->toString());
+        }
+
+        return instance;
+    }
+
+    runtimeError(call->token, callee->toString() + " is not a function nor class");
 }
 
 Value *Interpreter::evaluateFunction(FunctionExpression *function) {
@@ -155,17 +169,44 @@ Value *Interpreter::evaluateFunction(FunctionExpression *function) {
 }
 
 Value *Interpreter::evaluateClass(ClassExpression *klass) {
-    return new Value(new ClassValue(klass->definition));
+    int initArity = 0;
+    map<string, Value*> staticAttributes, methods;
+    for (AssignStatement* statement : klass->actions) {
+        Value* value = evaluate(statement->value);
+        string name = *(string *) statement->token->value;
+        if (value->type == Function) {
+            methods[name] = value;
+            value->getFunction()->name = name;
+            if (name == initString)
+                initArity = value->getFunction()->arity;
+        } else
+            staticAttributes[name] = value;
+    }
+    return new Value(new ClassValue(staticAttributes, methods, initArity));
 }
 
 Value *Interpreter::evaluateGet(GetExpression *get) {
     Value* callee = evaluate(get->callee);
     string name = *(string*)get->name->value;
-    Value* value = callee->getInstance()->attributes[name];
+
+    Value* value = nullptr;
+    if (callee->type == Instance) {
+        if (callee->getInstance()->klass->staticAttributes.count(name))
+            value = callee->getInstance()->klass->staticAttributes[name];
+        else
+            value = callee->getInstance()->attributes[name];
+    } else if (callee->type == Class) {
+        if (callee->getClass()->staticAttributes.count(name))
+            value = callee->getClass()->staticAttributes[name];
+        else
+            value = callee->getClass()->methods[name];
+    } else
+        runtimeError(get->name, callee->toString() + " is not an instance nor a class");
+
 
     if (value == nullptr)
         throw RPPException("Attribute error", get->name->errorSignature(),
-                           callee->toString() + " has not attribute " + name);
+                           callee->toString() + " has not attribute " + Hebrew::englishify(name));
 
     return value;
 }
@@ -275,7 +316,11 @@ void Interpreter::executeWhile(WhileStatement *statement) {
 void Interpreter::executeSet(SetStatement *statement) {
     Value* callee = evaluate(statement->callee);
     Value* value = evaluate(statement->value);
-    callee->getInstance()->attributes[*(string*)statement->name->value] = value;
+    string name = *(string*)statement->name->value;
+    if (callee->getInstance()->klass->staticAttributes.count(name))
+        callee->getInstance()->klass->staticAttributes[name] = value;
+    else
+        callee->getInstance()->attributes[name] = value;
 }
 
 Value *DeclaredFunction::call(Interpreter *interpreter, vector<Value*> arguments) {
@@ -310,6 +355,14 @@ Value *NativeFunction::call(Interpreter *interpreter, vector<Value *> arguments)
     return value;
 }
 
+Value *BoundFunction::call(Interpreter *interpreter, vector<Value *> arguments) {
+    Value* prevSelf = interpreter->environment->get(interpreter->selfString);
+    interpreter->environment->set(interpreter->selfString, self);
+    Value* value = function->call(interpreter, arguments);
+    interpreter->environment->set(interpreter->selfString, prevSelf);
+    return value;
+}
+
 // endregion
 
 // region utils
@@ -319,12 +372,14 @@ void Interpreter::print(Value* value, bool printNone, bool printEndLine) {
     {
         case String:
         {
-            cout << englishify(value->getString());
+            cout << Hebrew::englishify(value->getString());
             break;
         }
         case NoneType:
             if (printNone)
                 cout << value->toString();
+            else
+                return;
             break;
         default:
             cout << value->toString();
@@ -333,60 +388,6 @@ void Interpreter::print(Value* value, bool printNone, bool printEndLine) {
     if (printEndLine)
         cout << endl;
 }
-
-string Interpreter::englishify(string value) {
-    string output = "";
-
-    string::iterator it = value.begin();
-    while (it != value.end())
-    {
-        string::iterator prev = it;
-        uint32_t ch = utf8::next(it, value.end());
-        if (hebrew.count(ch) == 0)
-            output += string(prev, it);
-        else
-            output += hebrew[ch];
-    }
-    return output;
-}
-
-map<uint32_t, string> Interpreter::setupHebrew() {
-    string alphabet = "אבגדהוזחטיכלמנסעפצקרשתםףץןך";
-    string::iterator it = alphabet.begin();
-
-    map<uint32_t, string> hebrew;
-    hebrew[utf8::next(it, alphabet.end())] = "a";
-    hebrew[utf8::next(it, alphabet.end())] = "b";
-    hebrew[utf8::next(it, alphabet.end())] = "g";
-    hebrew[utf8::next(it, alphabet.end())] = "d";
-    hebrew[utf8::next(it, alphabet.end())] = "h";
-    hebrew[utf8::next(it, alphabet.end())] = "w";
-    hebrew[utf8::next(it, alphabet.end())] = "z";
-    hebrew[utf8::next(it, alphabet.end())] = "j";
-    hebrew[utf8::next(it, alphabet.end())] = "t";
-    hebrew[utf8::next(it, alphabet.end())] = "y";
-    hebrew[utf8::next(it, alphabet.end())] = "c";
-    hebrew[utf8::next(it, alphabet.end())] = "l";
-    hebrew[utf8::next(it, alphabet.end())] = "m";
-    hebrew[utf8::next(it, alphabet.end())] = "n";
-    hebrew[utf8::next(it, alphabet.end())] = "s";
-    hebrew[utf8::next(it, alphabet.end())] = "'a";
-    hebrew[utf8::next(it, alphabet.end())] = "p";
-    hebrew[utf8::next(it, alphabet.end())] = "tz";
-    hebrew[utf8::next(it, alphabet.end())] = "k";
-    hebrew[utf8::next(it, alphabet.end())] = "r";
-    hebrew[utf8::next(it, alphabet.end())] = "sh";
-    hebrew[utf8::next(it, alphabet.end())] = "t";
-    hebrew[utf8::next(it, alphabet.end())] = "m";
-    hebrew[utf8::next(it, alphabet.end())] = "f";
-    hebrew[utf8::next(it, alphabet.end())] = "tz";
-    hebrew[utf8::next(it, alphabet.end())] = "n";
-    hebrew[utf8::next(it, alphabet.end())] = "j";
-
-    return hebrew;
-}
-
-map<uint32_t, string> Interpreter::hebrew = Interpreter::setupHebrew();
 
 void Interpreter::runtimeError(Token* token, string message) {
     throw RPPException("Runtime Error", token->errorSignature(), message);
@@ -468,12 +469,13 @@ string Value::toString() {
                 return "true";
             return "false";
         case String:
-            return "'" + Interpreter::englishify(getString()) + "'";
+            return "'" + Hebrew::englishify(getString()) + "'";
         case Function: {
             int arity = getFunction()->arity;
-            string str = "function";
+            string str = "<function";
             if (!getFunction()->name.empty())
-                str += "_" + Interpreter::englishify(getFunction()->name) + "(";
+                str += " '" + Hebrew::englishify(getFunction()->name) + "'";
+            str += ">(";
 
             if (arity == -1)
                 return str + "...)";
@@ -483,16 +485,18 @@ string Value::toString() {
             return str + to_string(arity) + " arguments)";
         }
         case Class: {
-            string str = "class";
+            string str = "<class";
             if (!getClass()->name.empty())
-                str += "_" + Interpreter::englishify(getClass()->name);
+                str += " '" + Hebrew::englishify(getClass()->name) + "'";
+            str += '>';
 
             return str;
         }
         case Instance: {
-            string str = "instance";
+            string str = "<";
             if (!getInstance()->klass->name.empty())
-                str += "_" + Interpreter::englishify(getInstance()->klass->name);
+                str +=  "'" + Hebrew::englishify(getInstance()->klass->name) + "' ";
+            str += "instance>";
 
             return str;
         }

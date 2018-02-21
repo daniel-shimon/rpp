@@ -41,8 +41,16 @@ Expression *Parser::klass()
 {
     if (nextMatch(Colon) && match(NewLine)) {
         Token* token = next();
-        BlockStatement* definition = blockStatement(true);
-        return new ClassExpression(token, definition);
+        vector<AssignStatement*> actions;
+        indent++;
+        for (Statement* statement : parse()) {
+            if (AssignStatement* assign = dynamic_cast<AssignStatement*>(statement))
+                actions.push_back(assign);
+            else
+                syntaxError("non assign statement in class definition");
+        }
+        indent--;
+        return new ClassExpression(token, actions);
     }
 
     syntaxError("bad class declaration");
@@ -161,21 +169,22 @@ Statement *Parser::statement() {
 Statement *Parser::ifStatement() {
     Expression* condition = expression();
     Statement* action = actionStatement();
-
     vector<pair<Expression*, Statement*>> elifs;
-    while (match(Else) && match(If, 1))
-    {
-        next();
-        next();
-        Expression* elifCondition = expression();
-        Statement* elifAction = actionStatement();
-        pair<Expression*, Statement*> elif(elifCondition, elifAction);
-        elifs.push_back(elif);
-    }
-
     Statement* elseAction = nullptr;
-    if (nextMatch(Else))
-        elseAction = actionStatement();
+
+    while (nextIndented() && nextMatch(Else))
+    {
+        if (nextMatch(If)) {
+            current += 2;
+            Expression* elifCondition = expression();
+            Statement* elifAction = actionStatement();
+            pair<Expression*, Statement*> elif(elifCondition, elifAction);
+            elifs.push_back(elif);
+        } else {
+            elseAction = actionStatement();
+            break;
+        }
+    }
 
     return new IfStatement(condition, action, elifs, elseAction);
 }
@@ -183,7 +192,6 @@ Statement *Parser::ifStatement() {
 Statement *Parser::whileStatement() {
     Expression* condition = expression();
     Statement* action = actionStatement();
-
     return new WhileStatement(condition, action);
 }
 
@@ -319,21 +327,12 @@ vector<Statement*> Parser::parse() {
         try
         {
             while(nextMatch(NewLine)) {}
-            bool out = false;
-            for (int i = 0; i < indent; i++)
-                if (!match(Indent, i))
-                {
-                    out = true;
-                    break;
-                }
-            if (out)
+            if (!nextIndented())
                 break;
             if (nextMatch(NewLine))
                 continue;
 
-            current += indent;
             int startLine = peek()->line;
-
             statements.push_back(statement());
 
             if (!(peekMatch({Semicolon, NewLine, EndOfFile}) || peek()->line > startLine))
@@ -354,6 +353,14 @@ vector<Statement*> Parser::parse() {
         throw exceptions;
 
     return statements;
+}
+
+bool Parser::nextIndented() {
+    for (int i = 0; i < indent; i++)
+        if (!match(Indent, i))
+            return false;
+    current += indent;
+    return true;
 }
 
 void Parser::syntaxError(string message) {
