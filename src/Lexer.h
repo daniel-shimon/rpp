@@ -7,6 +7,10 @@
 
 #include "Hebrew.h"
 
+#define Self "אני"
+#define Init "__התחל__"
+#define ToString "__טקסט__"
+
 enum TokenType
 {
     OpenParen, CloseParen, Plus, Minus, Divide, Multiply, Modulo,

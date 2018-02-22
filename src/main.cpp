@@ -1,6 +1,4 @@
-#include "Lexer.h"
-#include "Parser.h"
-#include "Interpreter.h"
+#include "RPP.h"
 
 #include <fstream>
 
@@ -44,6 +42,13 @@ int main(int argC, char** argV)
 {
     string* source = new string();
     int returnValue;
+    RPP::init();
+
+    if (argC == 2 && (string(argV[1]) == "-v" || string(argV[1]) == "--version"))
+    {
+        cout << "rpp version " << version;
+        return 0;
+    }
     if (argC <= 1)
     {
         cout << "Welcome to interactive rpp (" << version << ")!" << endl;
@@ -57,13 +62,6 @@ int main(int argC, char** argV)
                 return returnValue;
         }
     }
-
-    if (argC == 2 && (string(argV[1]) == "-v" || string(argV[1]) == "--version"))
-    {
-        cout << "rpp version " << version;
-        return 0;
-    }
-
     if (argC == 2 && argV[1][0] != '-')
     {
         ifstream file(argV[1]);
@@ -91,7 +89,6 @@ int main(int argC, char** argV)
 
         return execute(source);
     }
-
     if (argC == 3 && string(argV[1]) == "-c")
     {
         source = new string(argV[2]);

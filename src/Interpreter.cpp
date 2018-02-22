@@ -125,9 +125,12 @@ Value *Interpreter::evaluateVariable(VariableExpression *variable) {
 Value *Interpreter::evaluateCall(CallExpression* call) {
     Value* callee = evaluate(call->callee);
     callee->token = call->token;
+    currentToken = call->token;
     vector<Value*> arguments;
+
     for (Expression* expression : call->arguments)
         arguments.push_back(evaluate(expression));
+
     if (callee->type == Function) {
         FunctionValue* function = callee->getFunction();
 
@@ -136,6 +139,7 @@ Value *Interpreter::evaluateCall(CallExpression* call) {
 
         runtimeError(call->token, "invalid argument count to " + callee->toString());
     }
+
     if (callee->type == Class) {
         Value* instance = new Value(new InstanceValue(callee->getClass()));
         map<string, Value*> methods;
@@ -144,7 +148,7 @@ Value *Interpreter::evaluateCall(CallExpression* call) {
                     new BoundFunction(instance, method.second->getFunction(), method.first));
         instance->getInstance()->attributes.insert(methods.begin(), methods.end());
 
-        if (Value* init = methods[initString]) {
+        if (Value* init = methods[Init]) {
             int initArity = instance->getInstance()->klass->initArity;
             if (initArity == call->arguments.size() || initArity == -1)
                 init->getFunction()->call(this, arguments);
@@ -177,7 +181,7 @@ Value *Interpreter::evaluateClass(ClassExpression *klass) {
         if (value->type == Function) {
             methods[name] = value;
             value->getFunction()->name = name;
-            if (name == initString)
+            if (name == Init)
                 initArity = value->getFunction()->arity;
         } else
             staticAttributes[name] = value;
@@ -206,7 +210,7 @@ Value *Interpreter::evaluateGet(GetExpression *get) {
 
     if (value == nullptr)
         throw RPPException("Attribute error", get->name->errorSignature(),
-                           callee->toString() + " has not attribute " + Hebrew::englishify(name));
+                           callee->toString() + " has no attribute " + Hebrew::englishify(name));
 
     return value;
 }
@@ -356,10 +360,10 @@ Value *NativeFunction::call(Interpreter *interpreter, vector<Value *> arguments)
 }
 
 Value *BoundFunction::call(Interpreter *interpreter, vector<Value *> arguments) {
-    Value* prevSelf = interpreter->environment->get(interpreter->selfString);
-    interpreter->environment->set(interpreter->selfString, self);
+    Value* prevSelf = interpreter->environment->get(Self);
+    interpreter->environment->set(Self, self);
     Value* value = function->call(interpreter, arguments);
-    interpreter->environment->set(interpreter->selfString, prevSelf);
+    interpreter->environment->set(Self, prevSelf);
     return value;
 }
 
@@ -376,13 +380,13 @@ void Interpreter::print(Value* value, bool printNone, bool printEndLine) {
             break;
         }
         case NoneType:
-            if (printNone)
+            if (printNone) {
                 cout << value->toString();
-            else
-                return;
-            break;
+                break;
+            }
+            return;
         default:
-            cout << value->toString();
+            cout << value->toString(this);
         }
 
     if (printEndLine)
@@ -391,6 +395,10 @@ void Interpreter::print(Value* value, bool printNone, bool printEndLine) {
 
 void Interpreter::runtimeError(Token* token, string message) {
     throw RPPException("Runtime Error", token->errorSignature(), message);
+}
+
+void Interpreter::runtimeError(string message) {
+    runtimeError(currentToken, message);
 }
 
 void Environment::set(string name, Value *value) {
@@ -453,7 +461,7 @@ InstanceValue *Value::getInstance() {
     return (InstanceValue*)value;
 }
 
-string Value::toString() {
+string Value::toString(Interpreter* interpreter) {
     switch (type)
     {
         case NoneType:
@@ -493,6 +501,9 @@ string Value::toString() {
             return str;
         }
         case Instance: {
+            if (interpreter && getInstance()->attributes.count(ToString))
+                return getInstance()->attributes[ToString]->getFunction()->call(interpreter)->toString();
+
             string str = "<";
             if (!getInstance()->klass->name.empty())
                 str +=  "'" + Hebrew::englishify(getInstance()->klass->name) + "' ";
@@ -515,12 +526,15 @@ vector<pair<string, Value*>> Interpreter::globals = {
             return new Value(input);
         }))},
         {"טקסט", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
-            return new Value(arguments[0]->toString());
+            return new Value(arguments[0]->toString(interpreter));
         }))},
         {"מספר", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
             if (arguments[0]->type == Number)
                 return new Value(arguments[0]->getNumber());
             return new Value(stod(arguments[0]->getString()));
+        }))},
+        {"סוג", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+            return new Value(arguments[0]->toString());
         }))},
 };
 

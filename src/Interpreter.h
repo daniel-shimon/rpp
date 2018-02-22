@@ -48,7 +48,7 @@ public:
     FunctionValue* getFunction();
     ClassValue* getClass();
     InstanceValue* getInstance();
-    string toString();
+    string toString(Interpreter* interpreter = nullptr);
 };
 struct ReturnValue
 {
@@ -64,7 +64,7 @@ public:
     int arity;
     string name;
 
-    virtual Value* call(Interpreter* interpreter, vector<Value*> arguments) = 0;
+    virtual Value* call(Interpreter* interpreter, vector<Value*> arguments = vector<Value*>()) = 0;
 };
 class ClassValue
 {
@@ -73,14 +73,15 @@ public:
     int initArity;
     map<string, Value*> staticAttributes, methods;
 
-    ClassValue(map<string, Value*> staticAttributes, map<string, Value*> methods, int initArity) :
-            staticAttributes(staticAttributes), methods(methods), initArity(initArity) {};
+    ClassValue(map<string, Value*> staticAttributes, map<string, Value*> methods, int initArity, string name = "") :
+            staticAttributes(staticAttributes), methods(methods), initArity(initArity), name(name) {};
 };
 class InstanceValue
 {
 public:
     ClassValue* klass;
     map<string, Value*> attributes;
+    map<string, void*> nativeAttributes;
 
     InstanceValue(ClassValue* klass) : klass(klass) {};
 };
@@ -141,9 +142,8 @@ public:
 class Interpreter : public ExpressionVisitor, public StatementVisitor {
 public:
     static vector<pair<string, Value*>> globals;
-    string initString = "__התחל__";
-    string selfString = "אני";
     Environment* environment;
+    Token* currentToken;
 
     Interpreter() {
         environment = new Environment();
@@ -171,10 +171,11 @@ public:
     void executeBlock(BlockStatement* statement);
     void executeSet(SetStatement* statement);
 
+    void runtimeError(string message = "unsupported operator");
+    void print(Value* value, bool printNone = true, bool printEndLine = true);
     static bool truthEvaluation(Value* value);
     static bool equalityEvaluation(Value *first, Value *second);
     static void runtimeError(Token* token, string message = "unsupported operator");
-    static void print(Value* value, bool printNone = true, bool printEndLine = true);
 };
 
 #endif //RSHI_INTERPRETER_H
