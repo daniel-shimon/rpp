@@ -71,6 +71,8 @@ const map<string, TokenType> reserved = {
         {"שונהמ", NotEquals},
         {"גדולמ", Bigger},
         {"קטןמ", Smaller},
+        {"חלקי", Divide},
+        {"כפול", Multiply},
         {"שקר", False},
         {"אמת", True},
         {"ריק", None},

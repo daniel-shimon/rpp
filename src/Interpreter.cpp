@@ -374,11 +374,6 @@ Value *BoundFunction::call(Interpreter *interpreter, vector<Value *> arguments) 
 void Interpreter::print(Value* value, bool printNone, bool printEndLine) {
     switch (value->type)
     {
-        case String:
-        {
-            cout << Hebrew::englishify(value->getString());
-            break;
-        }
         case NoneType:
             if (printNone) {
                 cout << value->toString();
@@ -468,16 +463,27 @@ string Value::toString(Interpreter* interpreter) {
             return "none";
         case Number: {
             double value = getNumber();
+            string number;
+
             if ((int)value == value)
-                return to_string((int)value);
-            return to_string(getNumber());
+                number = to_string((int)value);
+            else
+                number = to_string(getNumber());
+
+            if (interpreter)
+                return number;
+            return "<number " + number + ">";
         }
         case Bool:
             if (getBool())
                 return "true";
             return "false";
-        case String:
-            return "'" + Hebrew::englishify(getString()) + "'";
+        case String: {
+            const string str = Hebrew::englishify(getString());
+            if (interpreter)
+                return str;
+            return "<string '" + str + "'>";
+        }
         case Function: {
             int arity = getFunction()->arity;
             string str = "<function";
@@ -502,7 +508,7 @@ string Value::toString(Interpreter* interpreter) {
         }
         case Instance: {
             if (interpreter && getInstance()->attributes.count(ToString))
-                return getInstance()->attributes[ToString]->getFunction()->call(interpreter)->toString();
+                return getInstance()->attributes[ToString]->getFunction()->call(interpreter)->toString(interpreter);
 
             string str = "<";
             if (!getInstance()->klass->name.empty())

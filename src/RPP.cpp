@@ -20,11 +20,15 @@ void RPP::init() {
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 string value = "[";
                 for (Value* element : *(vector<Value*>*)getSelf(interpreter)->nativeAttributes["list"])
-                    value += element->toString() + ", ";
+                    value += element->toString(interpreter) + ", ";
                 if (value.size() >= 3)
                     value = value.substr(0, value.size() - 2);
                 value += "]";
                 return new Value(value);
+            }))},
+            {"גודל", new Value(new NativeFunction(0, []
+                    (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+                return new Value((double)((vector<Value*>*)getSelf(interpreter)->nativeAttributes["list"])->size());
             }))},
             {"הוסף", new Value(new NativeFunction(1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
