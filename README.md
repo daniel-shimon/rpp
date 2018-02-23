@@ -11,10 +11,14 @@ Interpreted, untyped, object-oriented and super cool
 
 <pre dir="rtl" align="right">
 מספר_חשוב = 23
+
 אם מספר_חשוב גדולמ 20:
     אם מספר_חשוב שווהל 23 פלוט 'מדהים!' אחרת:
         פלוט 'שונה'
+    // output: מדהים
+
 אחרת אם אמת או שקר פלוט 'סבבה'
+// output: סבבה
 </pre>
 
 ## Loops and functions
@@ -22,6 +26,7 @@ Interpreted, untyped, object-oriented and super cool
 <pre dir="rtl" align="right">
 אקו = פעולה(חזרות):
     הודעה = קלוט('')
+    
     מספר = 0
     כלעוד מספר קטןמ חזרות:
         פלוט הודעה
@@ -51,6 +56,9 @@ Interpreted, untyped, object-oriented and super cool
 סניף_מרכזי = סניף('תל אביב')
 סניף_מרכזי.הוסף_עובד('דניאל')
 פלוט סניף_מרכזי
+
+// output: תל אביב
+// output: דניאל 
 </pre>
 
 
