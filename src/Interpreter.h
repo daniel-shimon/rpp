@@ -162,8 +162,8 @@ public:
     Value* evaluateClass(ClassExpression* call);
     Value* evaluateGet(GetExpression* call);
 
-    Value* execute(vector<Statement*> statements);
-    void executeExpression(ExpressionStatement* statement);
+    Value* execute(vector<Statement*> statements, bool evaluate = false);
+    Value* executeExpression(ExpressionStatement* statement);
     void executeCommand(CommandStatement *statement);
     void executeIf(IfStatement* statement);
     void executeWhile(WhileStatement* statement);

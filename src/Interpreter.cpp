@@ -240,17 +240,16 @@ bool Interpreter::equalityEvaluation(Value* first, Value* second) {
 
 // region execution
 
-Value* Interpreter::execute(vector<Statement *> statements) {
+Value* Interpreter::execute(vector<Statement *> statements, bool evaluate) {
     Value* returnValue = Value::None;
     for (Statement* statement : statements)
     {
         try
         {
+            if (evaluate)
+                if (ExpressionStatement* expression = dynamic_cast<ExpressionStatement*>(statement))
+                    returnValue = executeExpression(expression);
             statement->accept(this);
-        }
-        catch (Value* value)
-        {
-            returnValue = value;
         }
         catch (ReturnValue value)
         {
@@ -260,8 +259,8 @@ Value* Interpreter::execute(vector<Statement *> statements) {
     return returnValue;
 }
 
-void Interpreter::executeExpression(ExpressionStatement *statement) {
-    throw evaluate(statement->expression);
+Value* Interpreter::executeExpression(ExpressionStatement *statement) {
+    return evaluate(statement->expression);
 }
 
 void Interpreter::executeCommand(CommandStatement *statement) {

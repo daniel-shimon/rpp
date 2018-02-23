@@ -6,17 +6,25 @@ using namespace std;
 
 string version = "0.1";
 
-int execute(string* source, Interpreter *interpreter = new Interpreter(), bool eval = false)
+int execute(string* source, Interpreter *interpreter = nullptr)
 {
+    bool eval = false;
+    if (interpreter)
+        eval = true;
+    else
+        interpreter = new Interpreter();
+
     try
     {
         Lexer *lexer = new Lexer(source);
         vector<Token *> tokens = lexer->scan();
         Parser *parser = new Parser(tokens);
-        Value* value = interpreter->execute(parser->parse());
 
-        if (eval)
+        if (eval) {
+            Value* value = interpreter->execute(parser->parse(), true);
             interpreter->print(value, false);
+        } else
+            interpreter->execute(parser->parse(), true);
 
         delete lexer;
         delete parser;
@@ -57,7 +65,7 @@ int main(int argC, char** argV)
         {
             cout << ">";
             getline(cin, *source);
-            returnValue = execute(source, interpreter, true);
+            returnValue = execute(source, interpreter);
             if (returnValue != 0)
                 return returnValue;
         }

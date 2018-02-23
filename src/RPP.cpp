@@ -34,7 +34,7 @@ void RPP::init() {
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 ((vector<Value*>*)getSelf(interpreter)->nativeAttributes["list"])->push_back(arguments[0]);
             }))},
-            {"קח", new Value(new NativeFunction(1, []
+            {"במיקום", new Value(new NativeFunction(1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 return ((vector<Value*>*)getSelf(interpreter)->nativeAttributes["list"])->at(
                         static_cast<unsigned int>(arguments[0]->getNumber()));

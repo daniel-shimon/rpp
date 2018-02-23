@@ -201,7 +201,7 @@ public:
 class StatementVisitor
 {
 public:
-    virtual void executeExpression(ExpressionStatement* statement) = 0;
+    virtual Value* executeExpression(ExpressionStatement* statement) = 0;
     virtual void executeBlock(BlockStatement* statement) = 0;
     virtual void executeCommand(CommandStatement *statement) = 0;
     virtual void executeIf(IfStatement* statement) = 0;
