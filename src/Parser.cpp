@@ -99,21 +99,35 @@ Expression *Parser::call()
 
     while (true)
     {
-        if (match(OpenParen))
+        if (match(OpenParen) || match(OpenSquare))
         {
             Token* token = next();
             vector<Expression*> arguments;
 
-            if (!match(CloseParen))
+            if (!match(CloseParen) && !match(CloseSquare))
                 do {
                     arguments.push_back(expression());
                 }
                 while (nextMatch(Comma));
 
-            if (!nextMatch(CloseParen))
-                syntaxError("missing '(' at end of argument list");
+            switch (token->type)
+            {
+                case OpenParen:
+                {
+                    if (!nextMatch(CloseParen))
+                        syntaxError("missing '(' at end of argument list");
 
-            callee = new CallExpression(token, callee, arguments);
+                    callee = new CallExpression(token, callee, arguments);
+                    break;
+                }
+                case OpenSquare:
+                {
+                    if (!nextMatch(CloseSquare))
+                        syntaxError("missing '[' at end of argument list");
+
+                    callee = new CallExpression(token, new GetExpression(callee, token, GetItem), arguments, true);
+                }
+            }
         } else if (nextMatch(Dot))
         {
             if (!match(Identifier))
@@ -207,8 +221,16 @@ Statement *Parser::assignStatement() {
         } else if (GetExpression* get = dynamic_cast<GetExpression*>(first))
         {
             Expression* value = expression();
-            return new SetStatement(get->callee, get->name, value);
-        }
+            return new SetStatement(get->callee, get->token, value);
+        } else if (CallExpression* call = dynamic_cast<CallExpression*>(first))
+            if (GetExpression* getExpr = dynamic_cast<GetExpression*>(call->callee))
+                if (getExpr->name == GetItem)
+                {
+                    Expression* value = expression();
+                    call->arguments.push_back(value);
+                    getExpr->name = SetItem;
+                    return new ExpressionStatement(call);
+                }
 
         syntaxError("invalid assignment target");
     }
@@ -433,6 +455,5 @@ Value *ClassExpression::accept(ExpressionVisitor *visitor) {
 
 Value *GetExpression::accept(ExpressionVisitor *visitor) {
     return visitor->evaluateGet(this);
-}
-
+}\
 // endregion

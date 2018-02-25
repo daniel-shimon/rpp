@@ -191,7 +191,7 @@ Value *Interpreter::evaluateClass(ClassExpression *klass) {
 
 Value *Interpreter::evaluateGet(GetExpression *get) {
     Value* callee = evaluate(get->callee);
-    string name = *(string*)get->name->value;
+    string name = get->name.empty() ? *(string*)get->token->value : get->name;
 
     Value* value = nullptr;
     if (callee->type == Instance) {
@@ -205,11 +205,11 @@ Value *Interpreter::evaluateGet(GetExpression *get) {
         else
             value = callee->getClass()->methods[name];
     } else
-        runtimeError(get->name, callee->toString() + " is not an instance nor a class");
+        runtimeError(get->token, callee->toString() + " is not an instance nor a class");
 
 
     if (value == nullptr)
-        throw RPPException("Attribute error", get->name->errorSignature(),
+        throw RPPException("Attribute error", get->token->errorSignature(),
                            callee->toString() + " has no attribute " + Hebrew::englishify(name));
 
     return value;

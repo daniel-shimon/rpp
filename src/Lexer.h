@@ -10,10 +10,14 @@
 #define Self "אני"
 #define Init "__התחל__"
 #define ToString "__טקסט__"
+#define GetItem "__קח__"
+#define SetItem "__שים__"
 
 enum TokenType
 {
-    OpenParen, CloseParen, Plus, Minus, Divide, Multiply, Modulo,
+    OpenParen, CloseParen, OpenSquare, CloseSquare,
+
+    Plus, Minus, Divide, Multiply, Modulo,
 
     Identifier, StringLiteral, NumberLiteral, False, True, None,
 

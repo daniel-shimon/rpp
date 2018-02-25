@@ -69,9 +69,10 @@ public:
     Token* token;
     Expression* callee;
     vector<Expression*> arguments;
+    bool index;
 
-    CallExpression(Token* token, Expression* callee, vector<Expression*> arguments) :
-            token(token), callee(callee), arguments(arguments) {};
+    CallExpression(Token* token, Expression* callee, vector<Expression*> arguments, bool index = false) :
+            token(token), callee(callee), arguments(arguments), index(index) {};
     Value* accept(ExpressionVisitor* visitor);
 };
 class FunctionExpression: public Expression
@@ -99,10 +100,11 @@ class GetExpression: public Expression
 {
 public:
     Expression* callee;
-    Token* name;
+    Token* token;
+    string name;
 
-    GetExpression(Expression* callee, Token* name) :
-            callee(callee), name(name) {};
+    GetExpression(Expression* callee, Token* token, string name = "") :
+            callee(callee), token(token), name(name) {};
     Value* accept(ExpressionVisitor* visitor);
 };
 

@@ -9,7 +9,7 @@ void RPP::init() {
     Interpreter::globals.push_back(pair<string, Value*>(
             "רשימה",
             new Value(new ClassValue(map<string, Value*>(), map<string, Value*>
-            ({{Init, new Value(new NativeFunction(-1, []
+            ({{Init,  new Value(new NativeFunction(-1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 vector<Value *> *list = new vector<Value*>;
                 getSelf(interpreter)->nativeAttributes["list"] = list;
@@ -26,20 +26,25 @@ void RPP::init() {
                 value += "]";
                 return new Value(value);
             }))},
-            {"גודל", new Value(new NativeFunction(0, []
+            {"גודל",  new Value(new NativeFunction(0, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 return new Value((double)((vector<Value*>*)getSelf(interpreter)->nativeAttributes["list"])->size());
             }))},
-            {"הוסף", new Value(new NativeFunction(1, []
+            {"הוסף",  new Value(new NativeFunction(1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 ((vector<Value*>*)getSelf(interpreter)->nativeAttributes["list"])->push_back(arguments[0]);
             }))},
-            {"במיקום", new Value(new NativeFunction(1, []
+            {GetItem, new Value(new NativeFunction(1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 return ((vector<Value*>*)getSelf(interpreter)->nativeAttributes["list"])->at(
                         static_cast<unsigned int>(arguments[0]->getNumber()));
             }))},
-            {"הוצא", new Value(new NativeFunction(1, []
+            {SetItem, new Value(new NativeFunction(1, []
+                    (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+                (*(vector<Value*>*)getSelf(interpreter)->nativeAttributes["list"])[arguments[0]->getNumber()]
+                        = arguments[0];
+            }))},
+            {"הוצא",  new Value(new NativeFunction(1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 unsigned int arg = static_cast<unsigned int>(arguments[0]->getNumber());
                 vector<Value *> *list = (vector<Value*>*)getSelf(interpreter)->nativeAttributes["list"];
