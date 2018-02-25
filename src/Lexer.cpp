@@ -18,8 +18,8 @@ vector<Token*> Lexer::scan() {
         {
             case '(': addToken(OpenParen, "("); break;
             case ')': addToken(CloseParen, ")"); break;
-            case '[': addToken(OpenSquare, "["); break;
-            case ']': addToken(CloseSquare, ""); break;
+            case ']': addToken(OpenSquare, "["); break;
+            case '[': addToken(CloseSquare, "]"); break;
             case '+': addToken(Plus, "+"); break;
             case '-': addToken(Minus, "-"); break;
             case '>': addToken(Bigger, ">"); break;

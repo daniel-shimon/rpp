@@ -5,11 +5,14 @@
 #ifndef RPP_RPP_H
 #define RPP_RPP_H
 
+#define IteratorClass "איטרטור"
+
 #include "Interpreter.h"
 
 class RPP {
 private:
     static InstanceValue* getSelf(Interpreter* interpreter);
+    static Value* getSelfValue(Interpreter* interpreter);
 public:
     static void init();
 };

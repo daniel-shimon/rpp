@@ -12,20 +12,25 @@
 #define ToString "__טקסט__"
 #define GetItem "__קח__"
 #define SetItem "__שים__"
+#define NextItem "__הבא__"
+#define Iterator "__איטרטור__"
+#define StopException "__שגיאת_עצירה__"
 
 enum TokenType
 {
     OpenParen, CloseParen, OpenSquare, CloseSquare,
 
+    Bigger, Smaller, BiggerEq, SmallerEq, Assign,
+
     Plus, Minus, Divide, Multiply, Modulo,
 
     Identifier, StringLiteral, NumberLiteral, False, True, None,
 
-    And, Or, Def, If, Else, Not, Equals, NotEquals, Power, While, ClassDef,
+    And, Or, Not, Equals, NotEquals, Power,
 
-    Bigger, Smaller, BiggerEq, SmallerEq, Assign,
+    If, Else, While, Def, ClassDef, Try, Catch, As, Finally, For, In,
 
-    Print, Exit, Return,
+    Print, Exit, Return, Throw,
 
     Semicolon, NewLine, EndOfFile, Indent, Colon, Comma, Dot,
 };
@@ -81,6 +86,13 @@ const map<string, TokenType> reserved = {
         {"אמת", True},
         {"ריק", None},
         {"מחלקה", ClassDef},
+        {"זרוק", Throw},
+        {"נסה", Try},
+        {"תפוס", Catch},
+        {"בתור", As},
+        {"לבסוף", Finally},
+        {"לכל", For},
+        {"בתוך", In},
 };
 
 //endregion

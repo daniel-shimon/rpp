@@ -18,6 +18,7 @@ class AssignStatement;
 class Expression
 {
 public:
+    Value* implicitValue = nullptr;
     virtual Value* accept(ExpressionVisitor* visitor) = 0;
 };
 class BinaryExpression: public Expression
@@ -182,6 +183,32 @@ public:
     SetStatement(Expression* callee, Token* name, Expression* value): callee(callee), name(name), value(value) {};
     void accept(StatementVisitor* visitor);
 };
+class TryStatement : public Statement
+{
+public:
+    Statement* action;
+    vector<Expression*> filters;
+    vector<pair<Token*, Statement*>> catches;
+    Statement* elseAction;
+    Statement* finallyAction;
+
+    TryStatement(Statement *action, vector<Expression *> filters, vector<pair<Token*, Statement*>> catches,
+                 Statement *elseAction, Statement *finallyAction) :
+            action(action), filters(filters), catches(catches),
+            elseAction(elseAction), finallyAction(finallyAction) {};
+    void accept(StatementVisitor* visitor);
+};
+class ForStatement : public Statement
+{
+public:
+    Token* name;
+    Expression* iterator;
+    Statement* action;
+
+    ForStatement(Token* name, Expression* iterator, Statement* action) :
+            name(name), iterator(iterator), action(action) {};
+    void accept(StatementVisitor* visitor);
+};
 
 // endregion
 
@@ -210,6 +237,8 @@ public:
     virtual void executeWhile(WhileStatement* statement) = 0;
     virtual void executeAssign(AssignStatement* statement) = 0;
     virtual void executeSet(SetStatement* statement) = 0;
+    virtual void executeTry(TryStatement* statement) = 0;
+    virtual void executeFor(ForStatement* statement) = 0;
 };
 
 class Parser
@@ -235,6 +264,8 @@ private:
     Statement* commandStatement();
     Statement* ifStatement();
     Statement* whileStatement();
+    Statement* tryStatement();
+    Statement* forStatement();
     Statement* assignStatement();
     BlockStatement* blockStatement(bool enableEmpty = false);
     Statement* actionStatement();
@@ -247,7 +278,9 @@ private:
     bool isAtEnd();
     bool match(TokenType type, int offset = 0);
     bool peekMatch(initializer_list<TokenType> types);
+    bool indented();
     bool nextIndented();
+    bool indentedMatch(TokenType type);
     void syntaxError(string message = "unexpected symbol");
 
     Expression* parseBinary(Expression* (Parser::*parseFunction)(), initializer_list<TokenType> typesList);

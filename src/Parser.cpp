@@ -6,8 +6,7 @@
 
 // region expressions
 
-Expression* Parser::expression()
-{
+Expression* Parser::expression() {
     if (nextMatch(Def))
         return function();
     if (nextMatch(ClassDef))
@@ -15,8 +14,7 @@ Expression* Parser::expression()
     return parseBinary(equality, {And, Or});
 }
 
-Expression *Parser::function()
-{
+Expression *Parser::function() {
     if (match(OpenParen))
     {
         Token* token = next();
@@ -37,8 +35,7 @@ Expression *Parser::function()
     syntaxError("missing argument list after function declaration");
 }
 
-Expression *Parser::klass()
-{
+Expression *Parser::klass() {
     if (nextMatch(Colon) && match(NewLine)) {
         Token* token = next();
         vector<AssignStatement*> actions;
@@ -56,33 +53,27 @@ Expression *Parser::klass()
     syntaxError("bad class declaration");
 }
 
-Expression* Parser::equality()
-{
+Expression* Parser::equality() {
     return parseBinary(this->comparison, {Equals, NotEquals});
 }
 
-Expression* Parser::comparison()
-{
+Expression* Parser::comparison() {
     return parseBinary(this->addition, {Bigger, Smaller, BiggerEq, SmallerEq});
 }
 
-Expression* Parser::addition()
-{
+Expression* Parser::addition() {
     return parseBinary(this->multiplication, {Plus, Minus});
 }
 
-Expression* Parser::multiplication()
-{
+Expression* Parser::multiplication() {
     return parseBinary(this->power, {Divide, Multiply, Modulo});
 }
 
-Expression* Parser::power()
-{
+Expression* Parser::power() {
     return parseBinary(this->unary, {Power});
 }
 
-Expression* Parser::unary()
-{
+Expression* Parser::unary() {
     if (peekMatch({Not, Minus}))
     {
         Token* op = next();
@@ -93,8 +84,7 @@ Expression* Parser::unary()
     return call();
 }
 
-Expression *Parser::call()
-{
+Expression *Parser::call() {
     Expression* callee = primary();
 
     while (true)
@@ -141,8 +131,7 @@ Expression *Parser::call()
     return callee;
 }
 
-Expression* Parser::primary()
-{
+Expression* Parser::primary() {
     if (peekMatch({False, True, None, StringLiteral, NumberLiteral}))
         return new LiteralExpression(next());
 
@@ -166,12 +155,16 @@ Expression* Parser::primary()
 // region statements
 
 Statement *Parser::statement() {
-    if (peekMatch({Print, Exit, Return}))
+    if (peekMatch({Print, Exit, Return, Throw}))
         return commandStatement();
     if (nextMatch(If))
         return ifStatement();
     if (nextMatch(While))
         return whileStatement();
+    if (nextMatch(Try))
+        return tryStatement();
+    if (nextMatch(For))
+        return forStatement();
     if (match(Identifier, 1) && nextMatch(Def))
         return defStatement();
     if (match(Identifier, 1) && nextMatch(ClassDef))
@@ -186,7 +179,7 @@ Statement *Parser::ifStatement() {
     vector<pair<Expression*, Statement*>> elifs;
     Statement* elseAction = nullptr;
 
-    while (nextIndented() && nextMatch(Else))
+    while (indentedMatch(Else))
     {
         if (nextMatch(If)) {
             current += 2;
@@ -207,6 +200,37 @@ Statement *Parser::whileStatement() {
     Expression* condition = expression();
     Statement* action = actionStatement();
     return new WhileStatement(condition, action);
+}
+
+Statement *Parser::tryStatement() {
+    Statement* action = actionStatement();
+    vector<Expression*> filters;
+    vector<pair<Token*, Statement*>> catches;
+    while (indentedMatch(Catch))
+    {
+        filters.push_back(expression());
+
+        if (nextMatch(As) && match(Identifier))
+        {
+            Token* identifier = next();
+            Statement* catchAction = actionStatement();
+            catches.push_back(pair<Token*, Statement*>(identifier, catchAction));
+        } else
+            syntaxError("bad catch block");
+    }
+
+    if (!filters.size())
+        syntaxError("missing 'catch' after 'try' statement");
+
+    Statement* elseAction = nullptr;
+    if (indentedMatch(Else))
+        elseAction = actionStatement();
+
+    Statement* finallyAction = nullptr;
+    if (indentedMatch(Finally))
+        finallyAction = actionStatement();
+
+    return new TryStatement(action, filters, catches, elseAction, finallyAction);
 }
 
 Statement *Parser::assignStatement() {
@@ -255,14 +279,18 @@ BlockStatement *Parser::blockStatement(bool enableEmpty) {
 }
 
 Statement *Parser::actionStatement() {
+    Statement* action;
     if (nextMatch(Colon))
     {
         if (!nextMatch(NewLine))
-            syntaxError("newline not allowed after colon");
+            syntaxError("newline missing after colon");
 
-        return blockStatement();
-    }
-    return statement();
+        action = blockStatement();
+    } else
+        action = statement();
+
+    while (nextMatch(NewLine)) {}
+    return action;
 }
 
 Statement *Parser::defStatement() {
@@ -277,6 +305,24 @@ Statement *Parser::classStatement() {
     Expression* value = klass();
 
     return new AssignStatement(name, value);
+}
+
+Statement *Parser::forStatement() {
+    if (match(Identifier))
+    {
+        Token* name = next();
+
+        if (nextMatch(In))
+        {
+            Expression* iterator = expression();
+            Statement* action = actionStatement();
+            return new ForStatement(name, iterator, action);
+        }
+
+        syntaxError("missing 'in' after 'for' identifier");
+    }
+
+    syntaxError("missing identifier after 'for' statement");
 }
 
 // endregion
@@ -317,7 +363,7 @@ bool Parser::match(TokenType type, int offset) {
 bool Parser::nextMatch(TokenType type) {
     if (match(type))
     {
-        next();
+        current++;
         return true;
     }
 
@@ -377,12 +423,30 @@ vector<Statement*> Parser::parse() {
     return statements;
 }
 
-bool Parser::nextIndented() {
+bool Parser::indented() {
     for (int i = 0; i < indent; i++)
         if (!match(Indent, i))
             return false;
-    current += indent;
     return true;
+}
+
+bool Parser::nextIndented() {
+    if (indented())
+    {
+        current += indent;
+        return true;
+    }
+    return false;
+}
+
+bool Parser::indentedMatch(TokenType type) {
+    if (tokens[current-1]->line < peek()->line)
+        if (indented() && match(type, indent)) {
+            current += indent + 1;
+            return true;
+        } else
+            return false;
+    else return match(type);
 }
 
 void Parser::syntaxError(string message) {
@@ -455,5 +519,14 @@ Value *ClassExpression::accept(ExpressionVisitor *visitor) {
 
 Value *GetExpression::accept(ExpressionVisitor *visitor) {
     return visitor->evaluateGet(this);
-}\
+}
+
+void TryStatement::accept(StatementVisitor *visitor) {
+    visitor->executeTry(this);
+}
+
+void ForStatement::accept(StatementVisitor *visitor) {
+    visitor->executeFor(this);
+}
+
 // endregion

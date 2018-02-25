@@ -7,6 +7,8 @@
 // region evaluation
 
 Value* Interpreter::evaluate(Expression* expression) {
+    if (expression->implicitValue)
+        return expression->implicitValue;
     return expression->accept(this);
 }
 
@@ -124,8 +126,9 @@ Value *Interpreter::evaluateVariable(VariableExpression *variable) {
 
 Value *Interpreter::evaluateCall(CallExpression* call) {
     Value* callee = evaluate(call->callee);
-    callee->token = call->token;
-    currentToken = call->token;
+    Token *token = call->token;
+    callee->token = token;
+    currentToken = token;
     vector<Value*> arguments;
 
     for (Expression* expression : call->arguments)
@@ -134,33 +137,18 @@ Value *Interpreter::evaluateCall(CallExpression* call) {
     if (callee->type == Function) {
         FunctionValue* function = callee->getFunction();
 
-        if (function->arity == call->arguments.size() || function->arity == -1)
+        if (function->arity == arguments.size() || function->arity == -1)
             return function->call(this, arguments);
 
-        runtimeError(call->token, "invalid argument count to " + callee->toString());
+        runtimeError(token, "invalid argument count to " + callee->toString());
     }
 
     if (callee->type == Class) {
-        Value* instance = new Value(new InstanceValue(callee->getClass()));
-        map<string, Value*> methods;
-        for (pair<string, Value*> method : callee->getClass()->methods)
-            methods[method.first] = new Value(
-                    new BoundFunction(instance, method.second->getFunction(), method.first));
-        instance->getInstance()->attributes.insert(methods.begin(), methods.end());
-
-        if (Value* init = methods[Init]) {
-            int initArity = instance->getInstance()->klass->initArity;
-            if (initArity == call->arguments.size() || initArity == -1)
-                init->getFunction()->call(this, arguments);
-            else
-                runtimeError(call->token, "invalid argument count to " +
-                        callee->toString() + " constructor " + init->toString());
-        }
-
+        Value *instance = createInstance(callee, token, arguments);
         return instance;
     }
 
-    runtimeError(call->token, callee->toString() + " is not a function nor class");
+    runtimeError(token, callee->toString() + " is not a function nor class");
 }
 
 Value *Interpreter::evaluateFunction(FunctionExpression *function) {
@@ -247,13 +235,19 @@ Value* Interpreter::execute(vector<Statement *> statements, bool evaluate) {
         try
         {
             if (evaluate)
-                if (ExpressionStatement* expression = dynamic_cast<ExpressionStatement*>(statement))
+                if (ExpressionStatement* expression = dynamic_cast<ExpressionStatement*>(statement)) {
                     returnValue = executeExpression(expression);
+                    break;
+                }
             statement->accept(this);
         }
         catch (ReturnValue value)
         {
             runtimeError(value.token, "return statement from non-function");
+        }
+        catch (Value* value)
+        {
+            runtimeError(value->token, value->toString() + " thrown without catch");
         }
     }
     return returnValue;
@@ -264,14 +258,18 @@ Value* Interpreter::executeExpression(ExpressionStatement *statement) {
 }
 
 void Interpreter::executeCommand(CommandStatement *statement) {
+    Value *value = evaluate(statement->expression);
+    value->token = statement->command;
     switch (statement->command->type)
     {
         case Print:
-            return print(evaluate(statement->expression));
+            return print(value);
         case Exit:
-            return exit((int)evaluate(statement->expression)->getNumber());
+            return exit((int) value->getNumber());
         case Return:
-            throw ReturnValue(statement->command, evaluate(statement->expression));
+            throw ReturnValue(statement->command, value);
+        case Throw:
+            throw value;
     }
 
     runtimeError(statement->command, "unknown command");
@@ -326,6 +324,78 @@ void Interpreter::executeSet(SetStatement *statement) {
         callee->getInstance()->attributes[name] = value;
 }
 
+void Interpreter::executeTry(TryStatement *statement) {
+    bool caught = false;
+    Value* thrown = nullptr;
+    try {
+        statement->action->accept(this);
+    } catch (Value* value) {
+        for (int i = 0; i < statement->filters.size(); i++)
+            if (isInstance(value, evaluate(statement->filters[i])))
+            {
+                Environment* newEnvironment = new Environment(environment);
+                environment = newEnvironment;
+                environment->set(*(string*)statement->catches[i].first->value, value);
+
+                statement->catches[i].second->accept(this);
+
+                environment = environment->getEnclosing();
+                delete newEnvironment;
+
+                caught = true;
+                break;
+            }
+
+        if (!caught)
+            thrown = value;
+    }
+
+    if (statement->elseAction && !caught && !thrown)
+        statement->elseAction->accept(this);
+
+    if (statement->finallyAction)
+        statement->finallyAction->accept(this);
+
+    if (thrown)
+        throw thrown;
+}
+
+void Interpreter::executeFor(ForStatement *statement) {
+    GetExpression *getIterExpression = new GetExpression(statement->iterator, statement->name, Iterator);
+    CallExpression* callIterExpression = new CallExpression(statement->name, getIterExpression, vector<Expression*>());
+
+    Value* iterator = evaluateCall(callIterExpression);
+    callIterExpression->implicitValue = iterator;
+    GetExpression *getExpression = new GetExpression(callIterExpression, statement->name, NextItem);
+    CallExpression* callExpression = new CallExpression(statement->name, getExpression, vector<Expression*>());
+    string name = *(string*)statement->name->value;
+
+    Environment* newEnvironment = new Environment(environment);
+    environment = newEnvironment;
+
+    try
+    {
+        while (true)
+        {
+            Value* value = evaluateCall(callExpression);
+            environment->set(name, value);
+            statement->action->accept(this);
+        }
+    }
+    catch (Value* value)
+    {
+        if (!isInstance(value, globals[StopException]))
+            throw value;
+    }
+
+    environment = environment->getEnclosing();
+    delete newEnvironment;
+    delete getExpression;
+    delete callExpression;
+    delete getIterExpression;
+    delete callIterExpression;
+}
+
 Value *DeclaredFunction::call(Interpreter *interpreter, vector<Value*> arguments) {
     Environment* newEnvironment = new Environment(interpreter->environment, true);
     interpreter->environment = newEnvironment;
@@ -359,10 +429,15 @@ Value *NativeFunction::call(Interpreter *interpreter, vector<Value *> arguments)
 }
 
 Value *BoundFunction::call(Interpreter *interpreter, vector<Value *> arguments) {
-    Value* prevSelf = interpreter->environment->get(Self);
-    interpreter->environment->set(Self, self);
+    Environment *environment = new Environment(interpreter->environment);
+    interpreter->environment = environment;
+    environment->set(Self, self);
+
     Value* value = function->call(interpreter, arguments);
-    interpreter->environment->set(Self, prevSelf);
+
+    interpreter->environment = interpreter->environment->getEnclosing();
+    delete environment;
+
     return value;
 }
 
@@ -388,7 +463,9 @@ void Interpreter::print(Value* value, bool printNone, bool printEndLine) {
 }
 
 void Interpreter::runtimeError(Token* token, string message) {
-    throw RPPException("Runtime Error", token->errorSignature(), message);
+    if (token)
+        throw RPPException("Runtime Error", token->errorSignature(), message);
+    throw RPPException("Runtime Error", "", message);
 }
 
 void Interpreter::runtimeError(string message) {
@@ -400,6 +477,29 @@ void Environment::set(string name, Value *value) {
         variables[name] = value;
     else
         enclosing->set(name, value);
+}
+
+bool Interpreter::isInstance(Value *obj, Value *cls) {
+    return obj->getInstance()->klass == cls->getClass();
+}
+
+Value *Interpreter::createInstance(Value *callee, Token *token, const vector<Value *> &arguments) {
+    Value* instance = new Value(new InstanceValue(callee->getClass()));
+    map<string, Value*> methods;
+    for (pair<string, Value*> method : callee->getClass()->methods)
+        methods[method.first] = new Value(
+                new BoundFunction(instance, method.second->getFunction(), method.first));
+    instance->getInstance()->attributes.insert(methods.begin(), methods.end());
+
+    if (Value* init = methods[Init]) {
+        int initArity = instance->getInstance()->klass->initArity;
+        if (initArity == arguments.size() || initArity == -1)
+            init->getFunction()->call(this, arguments);
+        else
+            runtimeError(token, "invalid argument count to " +
+                                callee->toString() + " constructor " + init->toString());
+    }
+    return instance;
 }
 
 Value *Environment::get(string name) {
@@ -523,7 +623,7 @@ string Value::toString(Interpreter* interpreter) {
 
 // region globals
 
-vector<pair<string, Value*>> Interpreter::globals = {
+map<string, Value*> Interpreter::globals = {
         {"קלוט", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
             interpreter->print(arguments[0], false, false);
             string input;
@@ -541,6 +641,7 @@ vector<pair<string, Value*>> Interpreter::globals = {
         {"סוג", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
             return new Value(arguments[0]->toString());
         }))},
+        {StopException, new Value(new ClassValue(map<string, Value*>(), map<string, Value*>(), 0, StopException))},
 };
 
 // endregion

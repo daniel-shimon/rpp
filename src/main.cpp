@@ -24,7 +24,7 @@ int execute(string* source, Interpreter *interpreter = nullptr)
             Value* value = interpreter->execute(parser->parse(), true);
             interpreter->print(value, false);
         } else
-            interpreter->execute(parser->parse(), true);
+            interpreter->execute(parser->parse());
 
         delete lexer;
         delete parser;

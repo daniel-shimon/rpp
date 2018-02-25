@@ -64,7 +64,7 @@ public:
     int arity;
     string name;
 
-    virtual Value* call(Interpreter* interpreter, vector<Value*> arguments = vector<Value*>()) = 0;
+    virtual Value* call(Interpreter *interpreter, vector<Value*> arguments = vector<Value*>()) = 0;
 };
 class ClassValue
 {
@@ -141,7 +141,7 @@ public:
 
 class Interpreter : public ExpressionVisitor, public StatementVisitor {
 public:
-    static vector<pair<string, Value*>> globals;
+    static map<string, Value*> globals;
     Environment* environment;
     Token* currentToken;
 
@@ -170,12 +170,17 @@ public:
     void executeAssign(AssignStatement* statement);
     void executeBlock(BlockStatement* statement);
     void executeSet(SetStatement* statement);
+    void executeTry(TryStatement* statement);
+    void executeFor(ForStatement* statement);
 
+    Value *createInstance(Value *callee, Token *token, const vector<Value *> &arguments);
     void runtimeError(string message = "unsupported operator");
     void print(Value* value, bool printNone = true, bool printEndLine = true);
+    bool isInstance(Value* obj, Value* cls);
     static bool truthEvaluation(Value* value);
     static bool equalityEvaluation(Value *first, Value *second);
     static void runtimeError(Token* token, string message = "unsupported operator");
+
 };
 
 #endif //RSHI_INTERPRETER_H
