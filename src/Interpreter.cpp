@@ -305,7 +305,7 @@ void Interpreter::executeBlock(BlockStatement *statement) {
     for (Statement* inlineStatement : statement->statements)
         inlineStatement->accept(this);
 
-    environment = environment->getEnclosing();
+    environment = newEnvironment->getEnclosing();
     delete newEnvironment;
 }
 
@@ -339,7 +339,7 @@ void Interpreter::executeTry(TryStatement *statement) {
 
                 statement->catches[i].second->accept(this);
 
-                environment = environment->getEnclosing();
+                environment = newEnvironment->getEnclosing();
                 delete newEnvironment;
 
                 caught = true;
@@ -388,7 +388,7 @@ void Interpreter::executeFor(ForStatement *statement) {
             throw value;
     }
 
-    environment = environment->getEnclosing();
+    environment = newEnvironment->getEnclosing();
     delete newEnvironment;
     delete getExpression;
     delete callExpression;
@@ -429,14 +429,14 @@ Value *NativeFunction::call(Interpreter *interpreter, vector<Value *> arguments)
 }
 
 Value *BoundFunction::call(Interpreter *interpreter, vector<Value *> arguments) {
-    Environment *environment = new Environment(interpreter->environment);
-    interpreter->environment = environment;
-    environment->set(Self, self);
+    Environment *newEnvironment = new Environment(interpreter->environment);
+    interpreter->environment = newEnvironment;
+    newEnvironment->set(Self, self);
 
     Value* value = function->call(interpreter, arguments);
 
-    interpreter->environment = interpreter->environment->getEnclosing();
-    delete environment;
+    interpreter->environment = newEnvironment->getEnclosing();
+    delete newEnvironment;
 
     return value;
 }
