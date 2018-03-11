@@ -1,5 +1,6 @@
 //
-// Created by Dan The Man on 1/29/2018.
+// Created by Daniel Shimon on 1/29/2018.
+// daielk09@gmail.com
 //
 
 #include "Parser.h"
@@ -182,7 +183,6 @@ Statement *Parser::ifStatement() {
     while (indentedMatch(Else))
     {
         if (nextMatch(If)) {
-            current += 2;
             Expression* elifCondition = expression();
             Statement* elifAction = actionStatement();
             pair<Expression*, Statement*> elif(elifCondition, elifAction);
@@ -446,7 +446,7 @@ bool Parser::indentedMatch(TokenType type) {
             return true;
         } else
             return false;
-    else return match(type);
+    else return nextMatch(type);
 }
 
 void Parser::syntaxError(string message) {

@@ -1,5 +1,6 @@
 //
-// Created by Dan The Man on 1/24/2018.
+// Created by Daniel Shimon on 1/24/2018.
+// daielk09@gmail.com
 //
 
 #ifndef RSHI_LEXER_H

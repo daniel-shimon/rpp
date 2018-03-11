@@ -1,5 +1,6 @@
 //
-// Created by Dan The Man on 1/24/2018.
+// Created by Daniel Shimon on 1/24/2018.
+// daielk09@gmail.com
 //
 #include "Lexer.h"
 
@@ -68,9 +69,9 @@ vector<Token*> Lexer::scan() {
                 break;
             case '\r':
             case '\n':
+                addToken(NewLine, "newline");
                 line++;
                 index = 1;
-                addToken(NewLine, "newline");
                 break;
             case '"':
                 scanString();

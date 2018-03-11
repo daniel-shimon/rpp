@@ -1,5 +1,6 @@
 //
 // Created by Daniel Shimon on 2/5/2018.
+// daielk09@gmail.com
 //
 
 #include "Interpreter.h"
@@ -623,25 +624,6 @@ string Value::toString(Interpreter* interpreter) {
 
 // region globals
 
-map<string, Value*> Interpreter::globals = {
-        {"קלוט", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
-            interpreter->print(arguments[0], false, false);
-            string input;
-            getline(cin, input);
-            return new Value(input);
-        }))},
-        {"טקסט", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
-            return new Value(arguments[0]->toString(interpreter));
-        }))},
-        {"מספר", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
-            if (arguments[0]->type == Number)
-                return new Value(arguments[0]->getNumber());
-            return new Value(stod(arguments[0]->getString()));
-        }))},
-        {"סוג", new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
-            return new Value(arguments[0]->toString());
-        }))},
-        {StopException, new Value(new ClassValue(map<string, Value*>(), map<string, Value*>(), 0, StopException))},
-};
+map<string, Value*> Interpreter::globals = {};
 
 // endregion
