@@ -23,7 +23,6 @@ vector<Token*> Lexer::scan() {
             case ']': addToken(CloseSquare, "]"); break;
             case '+': addToken(Plus, "+"); break;
             case '-': addToken(Minus, "-"); break;
-            case '>': addToken(Bigger, ">"); break;
             case '%': addToken(Modulo, "%"); break;
             case ';': addToken(Semicolon, ";"); break;
             case ':': addToken(Colon, ":"); break;
@@ -51,6 +50,12 @@ vector<Token*> Lexer::scan() {
                 else
                     addToken(Divide, "/");
                 break;
+            case '>':
+                if (nextMatches('='))
+                    addToken(BiggerEq, ">=");
+                else
+                    addToken(Bigger, ">");
+                break;
             case '<':
                 if (nextMatches('='))
                     addToken(SmallerEq, "<=");
@@ -58,9 +63,7 @@ vector<Token*> Lexer::scan() {
                     addToken(Smaller, "<");
                 break;
             case '=':
-                if (nextMatches('>'))
-                    addToken(BiggerEq, "=>");
-                else if (nextMatches('='))
+                if (nextMatches('='))
                     addToken(Equals, "==");
                 else
                     addToken(Assign, "=");

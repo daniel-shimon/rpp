@@ -23,15 +23,15 @@ enum TokenType
 
     Bigger, Smaller, BiggerEq, SmallerEq, Assign,
 
-    Plus, Minus, Divide, Multiply, Modulo,
+    Plus, Minus, Divide, Multiply, Modulo, Power,
 
     Identifier, StringLiteral, NumberLiteral, False, True, None,
 
-    And, Or, Not, Equals, NotEquals, Power,
+    And, Or, Not, Equals, NotEquals,
 
     If, Else, While, Def, ClassDef, Try, Catch, As, Finally, For, In,
 
-    Print, Exit, Return, Throw,
+    Print, Exit, Return, Throw, Break, Continue,
 
     Semicolon, NewLine, EndOfFile, Indent, Colon, Comma, Dot,
 };
@@ -94,6 +94,8 @@ const map<string, TokenType> reserved = {
         {"לבסוף", Finally},
         {"לכל", For},
         {"בתוך", In},
+        {"שבור", Break},
+        {"המשך", Continue},
 };
 
 //endregion

@@ -246,6 +246,14 @@ Value* Interpreter::execute(vector<Statement *> statements, bool evaluate) {
         {
             runtimeError(value.token, "return statement from non-function");
         }
+        catch (BreakValue value)
+        {
+            runtimeError(value.token, "break statement from non-loop");
+        }
+        catch (ContinueValue value)
+        {
+            runtimeError(value.token, "continue statement from non-loop");
+        }
         catch (Value* value)
         {
             runtimeError(value->token, value->toString() + " thrown without catch");
@@ -259,7 +267,7 @@ Value* Interpreter::executeExpression(ExpressionStatement *statement) {
 }
 
 void Interpreter::executeCommand(CommandStatement *statement) {
-    Value *value = evaluate(statement->expression);
+    Value *value = statement->expression ? evaluate(statement->expression) : Value::None;
     value->token = statement->command;
     switch (statement->command->type)
     {
@@ -271,6 +279,10 @@ void Interpreter::executeCommand(CommandStatement *statement) {
             throw ReturnValue(statement->command, value);
         case Throw:
             throw value;
+        case Break:
+            throw BreakValue(statement->command);
+        case Continue:
+            throw ContinueValue(statement->command);
     }
 
     runtimeError(statement->command, "unknown command");
@@ -312,7 +324,17 @@ void Interpreter::executeBlock(BlockStatement *statement) {
 
 void Interpreter::executeWhile(WhileStatement *statement) {
     while (truthEvaluation(evaluate(statement->condition)))
-        statement->action->accept(this);
+    {
+        try {
+            statement->action->accept(this);
+        }
+        catch (BreakValue value) {
+            break;
+        }
+        catch (ContinueValue value) {
+            continue;
+        }
+    }
 }
 
 void Interpreter::executeSet(SetStatement *statement) {
@@ -374,19 +396,28 @@ void Interpreter::executeFor(ForStatement *statement) {
     Environment* newEnvironment = new Environment(environment);
     environment = newEnvironment;
 
-    try
+    while (true)
     {
-        while (true)
+        try
         {
             Value* value = evaluateCall(callExpression);
             environment->set(name, value);
             statement->action->accept(this);
         }
-    }
-    catch (Value* value)
-    {
-        if (!isInstance(value, globals[StopException]))
-            throw value;
+        catch (Value* value)
+        {
+            if (!isInstance(value, globals[StopException]))
+                throw value;
+            break;
+        }
+        catch (ContinueValue value)
+        {
+            continue;
+        }
+        catch (BreakValue value)
+        {
+            break;
+        }
     }
 
     environment = newEnvironment->getEnclosing();

@@ -262,7 +262,7 @@ private:
     Expression* primary();
 
     Statement* statement();
-    Statement* commandStatement();
+    Statement* commandStatement(bool allowValue = true);
     Statement* ifStatement();
     Statement* whileStatement();
     Statement* tryStatement();

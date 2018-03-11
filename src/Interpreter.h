@@ -21,6 +21,29 @@ class InstanceValue;
 
 // region values
 
+struct ReturnValue
+{
+public:
+    Token* token;
+    Value* value;
+
+    ReturnValue(Token* token, Value* value): token(token), value(value) {};
+};
+struct ContinueValue
+{
+public:
+    Token* token;
+
+    ContinueValue(Token* token): token(token) {};
+};
+struct BreakValue
+{
+public:
+    Token* token;
+
+    BreakValue(Token* token): token(token) {};
+};
+
 enum ValueType
 {
     String, Number, Bool, NoneType, Function, Class, Instance,
@@ -50,14 +73,6 @@ public:
     ClassValue* getClass();
     InstanceValue* getInstance();
     string toString(Interpreter* interpreter = nullptr);
-};
-struct ReturnValue
-{
-public:
-    Token* token;
-    Value* value;
-
-    ReturnValue(Token* token, Value* value): token(token), value(value) {};
 };
 class FunctionValue
 {

@@ -158,6 +158,8 @@ Expression* Parser::primary() {
 Statement *Parser::statement() {
     if (peekMatch({Print, Exit, Return, Throw}))
         return commandStatement();
+    if (peekMatch({Continue, Break}))
+        return commandStatement(false);
     if (nextMatch(If))
         return ifStatement();
     if (nextMatch(While))
@@ -262,9 +264,12 @@ Statement *Parser::assignStatement() {
     return new ExpressionStatement(first);
 }
 
-Statement *Parser::commandStatement() {
+Statement *Parser::commandStatement(bool allowValue) {
     Token* command = next();
-    return new CommandStatement(command, expression());
+    Expression* value = nullptr;
+    if (allowValue)
+        value = expression();
+    return new CommandStatement(command, value);
 }
 
 BlockStatement *Parser::blockStatement(bool enableEmpty) {
@@ -397,7 +402,7 @@ vector<Statement*> Parser::parse() {
             while(nextMatch(NewLine)) {}
             if (!nextIndented())
                 break;
-            if (nextMatch(NewLine))
+            if (nextMatch(NewLine) || match(EndOfFile))
                 continue;
 
             int startLine = peek()->line;
