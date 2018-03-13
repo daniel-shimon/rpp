@@ -12,6 +12,7 @@ Interpreted, untyped, object-oriented and super cool.
 [Variables, comparison and math](#vars)
 
 <a name="vars"/>
+
 ## Variables, comparison and math
 
 <pre dir="rtl" align="right">
