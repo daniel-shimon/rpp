@@ -9,9 +9,19 @@ Interpreted, untyped, object-oriented and super cool.
 
 ## Table of Contents
 
-[Variables, comparison and math](#vars)
+* [Variables, Comparison and Math](#vars)
+    * [Operators](#vars-operators)
+* [Control Flow](#flow)
+    * [Keywords](#flow-keywords)
+    * [Flexible Syntax](#flow-flexible)
+* [Functions](#functions)
+* [Classes](#classes)
+    * [Magic Methods (dunders)](#classes-magic)
+* [Built-Ins](#built-ins)
+    * [List](#built-ins-list)
 
 <a name="vars"/>
+
 ## Variables, comparison and math
 
 <pre dir="rtl" align="right">
@@ -24,6 +34,8 @@ Interpreted, untyped, object-oriented and super cool.
 פלוט מ גדולמ 70 וגם שקר // false
 פלוט לא (מ קטןמ 0.34) // true
 </pre>
+
+<a name="vars-operators"/>
 
 ### Operators
 
@@ -47,6 +59,8 @@ Any of the c-style operators can be used interchangeably with the hebrew keyword
 | true | אמת |
 
 - Power operator: `**` (python-style)
+
+<a name="flow"/>
 
 ## Control flow
 
@@ -74,6 +88,8 @@ Any of the c-style operators can be used interchangeably with the hebrew keyword
 // 0, 1, 2, ...
 </pre>
 
+<a name="flow-keywords"/>
+
 ### Keywords
 
 | c-style | rpp |
@@ -88,6 +104,8 @@ Any of the c-style operators can be used interchangeably with the hebrew keyword
 | :------ | --: |
 | for | לכל |
 | in | בתוך |
+
+<a name="flow-flexible"/>
 
 ### Flexible syntax
 
@@ -113,6 +131,8 @@ Supported code blocks:
 - for loops
 - try, catch
 
+<a name="functions"/>
+
 ## Functions
 
 Functions in rpp are declared similarly to JavaScript - they can be declared by name or anonymously
@@ -130,6 +150,8 @@ Functions in rpp are declared similarly to JavaScript - they can be declared by 
 
 // 1, 1, 2, 3, 5, ...
 </pre>
+
+<a name="classes"/>
 
 ## Classes
 
@@ -150,6 +172,8 @@ Class declarations are declared similarly to functions (named or anonymous)
 פלוט חישובים2.ריבוע(3)
 // 9
 </pre>
+
+<a name="classes-magic"/>
 
 ### Magic methods (dunders)
 
@@ -187,9 +211,13 @@ Similarly to Python, rpp classes can implement "magic" methods that run in certa
 | `__next__` | `__הבא__` |
 | `__iterator__` | `__איטרטור__` |
 
+<a name="built-ins"/>
+
 ## Built-ins
 
 As all great programming languages, rpp is equipped with some useful built-ins
+
+<a name="built-ins-list"/>
 
 ### List
 
