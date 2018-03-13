@@ -26,7 +26,6 @@ vector<Token*> Lexer::scan() {
             case '%': addToken(Modulo, "%"); break;
             case ';': addToken(Semicolon, ";"); break;
             case ':': addToken(Colon, ":"); break;
-            case '\t': addToken(Indent, "tab"); break;
             case ',': addToken(Comma, ","); break;
             case '.': addToken(Dot, "."); break;
             case '!':
@@ -69,7 +68,14 @@ vector<Token*> Lexer::scan() {
                     addToken(Assign, "=");
                 break;
             case ' ':
-                break;
+                if (peek() == ' ' && peek(1) == ' ' && peek(2) == ' ') {
+                    next();
+                    next();
+                    next();
+                }
+                else
+                    break;
+            case '\t': addToken(Indent, "tab"); break;
             case '\r':
             case '\n':
                 addToken(NewLine, "newline");

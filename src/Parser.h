@@ -268,8 +268,8 @@ private:
     Statement* tryStatement();
     Statement* forStatement();
     Statement* assignStatement();
-    BlockStatement* blockStatement(bool enableEmpty = false);
-    Statement* actionStatement();
+    Statement* blockStatement(bool enableEmpty);
+    Statement* actionStatement(bool enableEmpty = false);
     Statement* defStatement();
     Statement* classStatement();
 

@@ -37,21 +37,27 @@ Expression *Parser::function() {
 }
 
 Expression *Parser::klass() {
-    if (nextMatch(Colon) && match(NewLine)) {
-        Token* token = next();
-        vector<AssignStatement*> actions;
-        indent++;
-        for (Statement* statement : parse()) {
-            if (AssignStatement* assign = dynamic_cast<AssignStatement*>(statement))
-                actions.push_back(assign);
-            else
-                syntaxError("non assign statement in class definition");
-        }
-        indent--;
-        return new ClassExpression(token, actions);
+    Token* token = peek();
+    Statement* declaration = actionStatement(true);
+    vector<Statement*> statements;
+    BlockStatement* block = dynamic_cast<BlockStatement*>(declaration);
+    if (block)
+        statements = block->statements;
+    else
+        statements.push_back(declaration);
+
+    vector<AssignStatement*> actions;
+    for (Statement* statement : statements) {
+        if (AssignStatement* assign = dynamic_cast<AssignStatement*>(statement))
+            actions.push_back(assign);
+        else
+            syntaxError("non assign statement in class definition");
     }
 
-    syntaxError("bad class declaration");
+    if (block)
+        delete block;
+
+    return new ClassExpression(token, actions);
 }
 
 Expression* Parser::equality() {
@@ -272,7 +278,7 @@ Statement *Parser::commandStatement(bool allowValue) {
     return new CommandStatement(command, value);
 }
 
-BlockStatement *Parser::blockStatement(bool enableEmpty) {
+Statement *Parser::blockStatement(bool enableEmpty) {
     indent++;
     vector<Statement*> statements = parse();
     indent--;
@@ -283,14 +289,14 @@ BlockStatement *Parser::blockStatement(bool enableEmpty) {
     return new BlockStatement(statements);
 }
 
-Statement *Parser::actionStatement() {
+Statement *Parser::actionStatement(bool enableEmpty) {
     Statement* action;
     if (nextMatch(Colon))
     {
         if (!nextMatch(NewLine))
             syntaxError("newline missing after colon");
 
-        action = blockStatement();
+        action = blockStatement(enableEmpty);
     } else
         action = statement();
 
