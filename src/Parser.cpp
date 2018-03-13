@@ -9,13 +9,13 @@
 
 Expression* Parser::expression() {
     if (nextMatch(Def))
-        return function();
+        return funktion();
     if (nextMatch(ClassDef))
         return klass();
-    return parseBinary(equality, {And, Or});
+    return parseBinary(bind(&Parser::equality, this), {And, Or});
 }
 
-Expression *Parser::function() {
+Expression *Parser::funktion() {
     if (match(OpenParen))
     {
         Token* token = next();
@@ -61,23 +61,23 @@ Expression *Parser::klass() {
 }
 
 Expression* Parser::equality() {
-    return parseBinary(this->comparison, {Equals, NotEquals});
+    return parseBinary(bind(&Parser::comparison, this), {Equals, NotEquals});
 }
 
 Expression* Parser::comparison() {
-    return parseBinary(this->addition, {Bigger, Smaller, BiggerEq, SmallerEq});
+    return parseBinary(bind(&Parser::addition, this), {Bigger, Smaller, BiggerEq, SmallerEq});
 }
 
 Expression* Parser::addition() {
-    return parseBinary(this->multiplication, {Plus, Minus});
+    return parseBinary(bind(&Parser::multiplication, this), {Plus, Minus});
 }
 
 Expression* Parser::multiplication() {
-    return parseBinary(this->power, {Divide, Multiply, Modulo});
+    return parseBinary(bind(&Parser::power, this), {Divide, Multiply, Modulo});
 }
 
 Expression* Parser::power() {
-    return parseBinary(this->unary, {Power});
+    return parseBinary(bind(&Parser::unary, this), {Power});
 }
 
 Expression* Parser::unary() {
@@ -306,7 +306,7 @@ Statement *Parser::actionStatement(bool enableEmpty) {
 
 Statement *Parser::defStatement() {
     Token* name = next();
-    Expression* value = function();
+    Expression* value = funktion();
 
     return new AssignStatement(name, value);
 }
@@ -383,13 +383,13 @@ bool Parser::nextMatch(TokenType type) {
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wincompatible-pointer-types"
-Expression* Parser::parseBinary(Expression* (Parser::*parseFunction)(), initializer_list<TokenType> typesList) {
-    Expression* expression = (this->*parseFunction)();
+Expression* Parser::parseBinary(function<Expression*()> parseFunction, initializer_list<TokenType> typesList) {
+    Expression* expression = parseFunction();
 
     while(peekMatch(typesList))
     {
         Token* op = next();
-        Expression* second = (this->*parseFunction)();
+        Expression* second = parseFunction();
         expression = new BinaryExpression(expression, op, second);
     }
 

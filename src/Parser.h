@@ -8,6 +8,8 @@
 
 #include "Lexer.h"
 
+#include <functional>
+
 class ExpressionVisitor;
 class StatementVisitor;
 class Value;
@@ -250,7 +252,7 @@ private:
     int indent = 0;
 
     Expression* expression();
-    Expression* function();
+    Expression* funktion();
     Expression* klass();
     Expression* equality();
     Expression* comparison();
@@ -284,7 +286,7 @@ private:
     bool indentedMatch(TokenType type);
     void syntaxError(string message = "unexpected symbol");
 
-    Expression* parseBinary(Expression* (Parser::*parseFunction)(), initializer_list<TokenType> typesList);
+    Expression* parseBinary(function<Expression*()> parseFunction, initializer_list<TokenType> typesList);
 public:
     Parser(vector<Token*> tokens): tokens(tokens) {};
     vector<Statement*> parse();

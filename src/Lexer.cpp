@@ -194,7 +194,7 @@ string Token::errorSignature() {
 
 string Token::errorSignature(int line, int index, string lexeme) {
     if (lexeme.size() > 0)
-        return "at line " + to_string(line) + " index " + to_string(index) + " ('" + Hebrew::englishify(lexeme) + "')";
+        return "at line " + to_string(line) + " index " + to_string(index) + " ('" + lexeme + "')";
     return "at line " + to_string(line) + " index " + to_string(index);
 }
 

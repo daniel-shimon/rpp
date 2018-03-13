@@ -16,6 +16,8 @@
 #define NextItem "__הבא__"
 #define Iterator "__איטרטור__"
 #define StopException "__שגיאת_עצירה__"
+#define KeyException "__שגיאת_מפתח__"
+#define IndexException "__שגיאת_מיקום__"
 
 enum TokenType
 {

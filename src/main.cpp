@@ -37,13 +37,13 @@ int execute(string* source, Interpreter *interpreter = nullptr)
     } catch (vector<RPPException> exceptions)
     {
         for (RPPException exception : exceptions)
-            cout << exception.what() << endl;
+            Hebrew::print(exception.what(), true);
 
         if (!eval)
             return 1;
     } catch (RPPException exception)
     {
-        cout << exception.what() << endl ;
+        Hebrew::print(exception.what(), true);
 
         if (!eval)
             return 1;
@@ -60,16 +60,16 @@ int main(int argC, char** argV)
 
     if (argC == 2 && (string(argV[1]) == "-v" || string(argV[1]) == "--version"))
     {
-        cout << "rpp version " << version;
+        Hebrew::print("rpp version " + version);
         return 0;
     }
-    if (argC <= 1)
+    if (argC == 2 && (string(argV[1]) == "-i" || string(argV[1]) == "--interactive"))
     {
-        cout << "Welcome to interactive rpp (" << version << ")!" << endl;
+        Hebrew::print("Welcome to interactive rpp (" + version + ")!", true);
         Interpreter* interpreter = new Interpreter();
         while (true)
         {
-            cout << ">";
+            Hebrew::print(">");
             getline(cin, *source);
             returnValue = execute(source, interpreter);
             if (returnValue != 0)
@@ -81,7 +81,7 @@ int main(int argC, char** argV)
         ifstream file(argV[1]);
         if (!file.is_open())
         {
-            cout << "could not open '" << argV[1] << "'" << endl;
+            Hebrew::print("could not open '" + string(argV[1]) + "'", true);
             return 2;
         }
 
@@ -93,7 +93,7 @@ int main(int argC, char** argV)
             string::iterator invalid = utf8::find_invalid(line.begin(), line.end());
             if (invalid != line.end())
             {
-                cout << "invalid UTF-8 at line " << lineCount << endl;
+                Hebrew::print("invalid UTF-8 at line " + to_string(lineCount), true);
                 return 2;
             }
             lineCount++;
@@ -109,6 +109,6 @@ int main(int argC, char** argV)
         return execute(source);
     }
 
-    cout << "usage:" << endl << "\trpp [path] [-v] [--version] [-c code] [-i] [--interactive]" << endl;
+    Hebrew::print("usage:\n\trpp [path] [-v] [--version] [-c code] [-i] [--interactive]", true);
     return 1;
 }

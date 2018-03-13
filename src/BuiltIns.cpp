@@ -48,6 +48,8 @@ void RPP::init() {
 
     Interpreter::globals.insert({
             exception(StopException),
+            exception(KeyException),
+            exception(IndexException),
                                 });
 
     // endregion
@@ -103,11 +105,15 @@ void RPP::init() {
             }))},
             {GetItem, new Value(new NativeFunction(1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
-                return listAttr[static_cast<unsigned int>(arguments[0]->getNumber())];
+                unsigned int x = static_cast<unsigned int>(arguments[0]->getNumber());
+                if (listAttr.size() >= x)
+                    throw interpreter->createInstance(interpreter->globals[IndexException], nullptr,
+                                                            vector<Value*>());
+                return listAttr[x];
             }))},
             {SetItem, new Value(new NativeFunction(2, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
-                listAttr[arguments[0]->getNumber()] = arguments[0];
+                listAttr[arguments[0]->getNumber()] = arguments[1];
             }))},
             {Iterator, new Value(new NativeFunction(0, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
@@ -155,7 +161,11 @@ void RPP::init() {
             }))},
             {GetItem, new Value(new NativeFunction(1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
-                return mapAttr[arguments[0]->getString()];
+                const string x = arguments[0]->getString();
+                if (!mapAttr.count(x))
+                    throw interpreter->createInstance(interpreter->globals[KeyException], nullptr,
+                                                            vector<Value*>());
+                return mapAttr[x];
             }))},
             {SetItem, new Value(new NativeFunction(2, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
@@ -167,6 +177,10 @@ void RPP::init() {
                 for (pair<string, Value*> element : mapAttr)
                     keys.push_back(new Value(element.first));
                 return interpreter->createInstance(interpreter->globals[IteratorClass], nullptr, keys);
+            }))},
+            {"מכיל", new Value(new NativeFunction(1, []
+                    (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+                return new Value((bool)mapAttr.count(arguments[0]->getString()));
             }))},
             {"הוצא",  new Value(new NativeFunction(1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {

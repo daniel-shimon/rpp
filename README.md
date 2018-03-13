@@ -9,6 +9,9 @@ Interpreted, untyped, object-oriented and super cool.
 
 ## Table of Contents
 
+* [Installation](#install)
+    * [Windows](#install-win)
+    * [Linux](#install-linux)
 * [Variables, Comparison and Math](#vars)
     * [Operators](#vars-operators)
 * [Control Flow](#flow)
@@ -19,6 +22,33 @@ Interpreted, untyped, object-oriented and super cool.
     * [Magic Methods (dunders)](#classes-magic)
 * [Built-Ins](#built-ins)
     * [List](#built-ins-list)
+    * [Dictionary](#built-ins-dict)
+    * [Range](#built-ins-range)
+    * [Conversions](#built-ins-conv)
+
+<a name="install"/>
+
+## Installation
+
+<a name="install-win"/>
+
+### Windows
+
+If built with MinGW, make sure `libstdc++-6.dll` is available in the system PATH (usually located in `C:\MinGW\bin`).
+
+```cmd
+g++ -std=c++11 src\*.h src\*.cpp -o rpp.exe
+```
+
+<a name="install-linux"/>
+
+### Linux
+
+As simple as they get :)
+
+```bash
+g++ -std=c++11 src/*.h src/*.cpp -o rpp
+```
 
 <a name="vars"/>
 
@@ -55,10 +85,10 @@ Any of the c-style operators can be used interchangeably with the hebrew keyword
 | % | --- |
 | - | --- |
 | + | --- |
-| false | שקר |
-| true | אמת |
 
 - Power operator: `**` (python-style)
+- Boolean values: `אמת` and `שקר`
+- Boolean operators: `או`, `וגם` and `לא`
 
 <a name="flow"/>
 
@@ -221,16 +251,32 @@ As all great programming languages, rpp is equipped with some useful built-ins
 
 ### List
 
-#### constructor
+<pre dir="rtl" align="right">
+ר = רשימה(1,2,3)
+ר[2] = אמת
+פלוט ר.גודל() // 3
+ר.הוסף('שלום')
+ר.הוצא(0)
+פלוט ר.מצא(אמת) // 2
+פלוט ר.מצא('היי') // -1
+פלוט ר // [אמת, 3, 'שלום']
+לכל איבר בתוך ר:
+    פלוט איבר
+</pre>
 
-`רשימה(...)`
+<a name="built-ins-dict"/>
 
-Creates list with elements from arguments
+### Dictionary
 
-#### Get and Set
-
-Available with classic [] operator
-
-#### Size
-
-`א.גודל()`
+<pre dir="rtl" align="right">
+ר = מילון()
+ר['שם'] = 'רשי ועוד ועוד'
+ר['גרסה'] = '0.1'
+פלוט ר.גודל() // 2
+ר.הוצא('גרסה')
+פלוט ר.מכיל('שם') // אמת
+פלוט ר // {'שם': 'רשי ועוד ועוד'}
+לכל מפתח בתוך ר:
+    פלוט מפתח
+// שם
+</pre>

@@ -120,7 +120,7 @@ Value *Interpreter::evaluateVariable(VariableExpression *variable) {
 
     if (value == nullptr)
         throw RPPException("Name error", variable->token->errorSignature(),
-                           Hebrew::englishify(*(string*)variable->token->value) + " is not defined");
+                           *(string*)variable->token->value + " is not defined");
 
     return value;
 }
@@ -199,7 +199,7 @@ Value *Interpreter::evaluateGet(GetExpression *get) {
 
     if (value == nullptr)
         throw RPPException("Attribute error", get->token->errorSignature(),
-                           callee->toString() + " has no attribute " + Hebrew::englishify(name));
+                           callee->toString() + " has no attribute " + name);
 
     return value;
 }
@@ -220,6 +220,10 @@ bool Interpreter::equalityEvaluation(Value* first, Value* second) {
                 return first->getNumber() == second->getNumber();
             case String:
                 return first->getString() == second->getString();
+            case NoneType:
+                return second->type == NoneType;
+            default:
+                return first == second;
         }
 
     return false;
@@ -482,12 +486,15 @@ void Interpreter::print(Value* value, bool printNone, bool printEndLine) {
     {
         case NoneType:
             if (printNone) {
-                cout << value->toString();
+                Hebrew::print(value->toString());
                 break;
             }
             return;
+        case String:
+            Hebrew::print(value->getString());
+            break;
         default:
-            cout << value->toString(this);
+            Hebrew::print(value->toString(this));
         }
 
     if (printEndLine)
@@ -610,16 +617,16 @@ string Value::toString(Interpreter* interpreter) {
                 return "true";
             return "false";
         case String: {
-            const string str = Hebrew::englishify(getString());
+            const string str = getString();
             if (interpreter)
-                return str;
+                return "'" + str + "'";
             return "<string '" + str + "'>";
         }
         case Function: {
             int arity = getFunction()->arity;
             string str = "<function";
             if (!getFunction()->name.empty())
-                str += " '" + Hebrew::englishify(getFunction()->name) + "'";
+                str += " '" + getFunction()->name + "'";
             str += ">(";
 
             if (arity == -1)
@@ -632,18 +639,18 @@ string Value::toString(Interpreter* interpreter) {
         case Class: {
             string str = "<class";
             if (!getClass()->name.empty())
-                str += " '" + Hebrew::englishify(getClass()->name) + "'";
+                str += " '" + getClass()->name + "'";
             str += '>';
 
             return str;
         }
         case Instance: {
             if (interpreter && getInstance()->attributes.count(ToString))
-                return getInstance()->attributes[ToString]->getFunction()->call(interpreter)->toString(interpreter);
+                return getInstance()->attributes[ToString]->getFunction()->call(interpreter)->getString();
 
             string str = "<";
             if (!getInstance()->klass->name.empty())
-                str +=  "'" + Hebrew::englishify(getInstance()->klass->name) + "' ";
+                str +=  "'" + getInstance()->klass->name + "' ";
             str += "instance>";
 
             return str;
