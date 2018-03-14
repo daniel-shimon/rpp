@@ -40,10 +40,10 @@ Interpreted, untyped, object-oriented and super cool.
 
 ### Windows
 
-If built with MinGW, make sure `libstdc++-6.dll` is available in the system PATH (usually located in `C:\MinGW\bin`).
+A precompiled version for Win32 is available in the release section
 
 ```cmd
-g++ -std=c++11 src\*.h src\*.cpp -o rpp.exe
+ g++ -std=c++11 -static-libgcc -static-libstdc++ src/*.h src/*.cpp -o rpp.exe
 ```
 
 <a name="install-linux"/>

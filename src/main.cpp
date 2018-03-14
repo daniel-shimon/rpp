@@ -47,6 +47,12 @@ int execute(string* source, Interpreter *interpreter = nullptr)
 
         if (!eval)
             return 1;
+    } catch (utf8::invalid_utf8 exception)
+    {
+        Hebrew::print(exception.what(), true);
+
+        if (!eval)
+            return 1;
     }
 
     return 0;
