@@ -8,6 +8,8 @@
 
 #include "Interpreter.h"
 #include <unordered_map>
+#include <random>
+#include <chrono>
 
 #define IteratorClass "איטרטור"
 #define mapAttr (*nativeAttribute<unordered_map<string, Value*>*>(interpreter, "map"))
@@ -21,6 +23,8 @@ private:
     template <class T> inline static T nativeAttribute(Interpreter* interpreter, string name);
 public:
     static void init();
+    static mt19937 randEngine;
+    static uniform_real_distribution<double> randDist;
 };
 
 

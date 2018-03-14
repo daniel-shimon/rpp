@@ -224,7 +224,7 @@ Statement *Parser::tryStatement() {
             Statement* catchAction = actionStatement();
             catches.push_back(pair<Token*, Statement*>(identifier, catchAction));
         } else
-            syntaxError("bad catch block");
+            catches.push_back(pair<Token*, Statement*>(nullptr, actionStatement()));
     }
 
     if (!filters.size())

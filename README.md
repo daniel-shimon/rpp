@@ -20,11 +20,17 @@ Interpreted, untyped, object-oriented and super cool.
 * [Functions](#functions)
 * [Classes](#classes)
     * [Magic Methods (dunders)](#classes-magic)
+* [Exceptions](#exceptions)
+    * [Exception types](#exceptions-types)
 * [Built-Ins](#built-ins)
     * [List](#built-ins-list)
     * [Dictionary](#built-ins-dict)
     * [Range](#built-ins-range)
-    * [Conversions](#built-ins-conv)
+    * [Random](#built-ins-rand)
+    * [I/O](#built-ins-io)
+    * [Conversions and types](#built-ins-conv)
+* [Patterns](#patterns)
+    * [The Iterator pattern](#patterns-iter)
 
 <a name="install"/>
 
@@ -44,7 +50,7 @@ g++ -std=c++11 src\*.h src\*.cpp -o rpp.exe
 
 ### Linux
 
-As simple as they get :)
+As simple as they get :smile:
 
 ```bash
 g++ -std=c++11 src/*.h src/*.cpp -o rpp
@@ -134,6 +140,7 @@ Any of the c-style operators can be used interchangeably with the hebrew keyword
 | :------ | --: |
 | for | לכל |
 | in | בתוך |
+| as | בתור |
 
 <a name="flow-flexible"/>
 
@@ -241,6 +248,37 @@ Similarly to Python, rpp classes can implement "magic" methods that run in certa
 | `__next__` | `__הבא__` |
 | `__iterator__` | `__איטרטור__` |
 
+<a name="exceptions"/>
+
+## Exceptions
+
+Exceptions are thrown and caught by class type
+
+<pre dir="rtl" align="right">
+נסה:
+    ר = רשימה(1, 2)
+    ר[23]
+תפוס __שגיאת_מיקום__:
+    פלוט 'שיט'
+
+פעולה זורק():
+    ערך = רשימה(1, 2)
+    זרוק ערך
+
+נסה:
+    זורק()
+תפוס רשימה בתור א:
+    פלוט א
+</pre>
+
+<a name="exceptions-types"/>
+
+### Exception types
+
+- Index exception (thrown in list): `__שגיאת_מיקום__`
+- Key exception (thrown in dictionary): `__שגיאת_מפתח__`
+- Stop exception (thrown in iterator end): `__שגיאת_עצירה__`
+
 <a name="built-ins"/>
 
 ## Built-ins
@@ -268,6 +306,10 @@ As all great programming languages, rpp is equipped with some useful built-ins
 
 ### Dictionary
 
+Dictionaries in rpp support *only* string keys and any type of values
+
+For looping a Dictionary will yield it's keys
+
 <pre dir="rtl" align="right">
 ר = מילון()
 ר['שם'] = 'רשי ועוד ועוד'
@@ -279,4 +321,110 @@ As all great programming languages, rpp is equipped with some useful built-ins
 לכל מפתח בתוך ר:
     פלוט מפתח
 // שם
+</pre>
+
+<a name="built-ins-range"/>
+
+### Range
+
+Similarly to Python, rpp has a built-in Range functionality, with two calling signatures:
+- Iterate from 0 to max-1: `טווח(12)`
+- Iterate from min to max-1: `טווח(10, 20)`
+
+<pre dir="rtl" align="right">
+לכל מ בתוך טווח(10) אם מ % 2 שווהל 0 פלוט "זוגי" אחרת פלוט "איזוגי"
+// זוגי, איזוגי, ...
+</pre>
+
+<a name="built-ins-io"/>
+
+### I/O
+
+- Printing to console: the `פלוט` command.
+- Receiving input from the user: the `(פלט)קלוט` function
+
+Currently, rpp translates hebrew output to english letters to cope with rtl and hebrew in the windows console :sweat:
+
+<pre dir="rtl" align="right">
+פלוט 'שלום'
+פלוט 90
+פלוט אמת
+פלוט רשימה()
+
+קלוט('>')
+קלוט('מי אתה? ')
+קלוט()
+</pre>
+
+<a name="built-ins-range"/>
+
+### Range
+
+Similarly to Python, rpp has a built-in Range functionality, with two calling signatures:
+1. Iterate [0, max): `טווח(12)`
+2. Iterate [min, max): `טווח(10, 20)`
+
+<pre dir="rtl" align="right">
+לכל מ בתוך טווח(10) אם מ % 2 שווהל 0 פלוט "זוגי" אחרת פלוט "איזוגי"
+// זוגי, איזוגי, ...
+</pre>
+
+<a name="built-ins-rand"/>
+
+### Random
+
+Three random function signatures:
+1. Random real number in range [0, 1): `אקראי()`
+2. Random integer in range [0, max): `אקראי(3)`
+3. Random integer in range [min, max): `אקראי(1000, 2000)`
+
+<a name="built-ins-conv"/>
+
+### Conversions and types
+
+- String literals can be written with single (') or double (") quotes
+
+<pre dir="rtl" align="right">
+פלוט "המספר הוא " + טקסט(34) // המספר הוא 34
+פלוט מספר("3") * 2 // 6
+פלוט סוג(אמת) // <bool>
+</pre>
+
+<a name="patterns"/>
+
+## Patterns
+
+<a name="patterns-iter"/>
+
+### The Iterator pattern
+
+To implement an Iterator in rpp, a class must implement the following:
+
+- Return the iterator: `__איטרטור__()`
+- Return the next value and throw `__שגיאת_עצירה__` on end: `__הבא__()`
+
+<pre dir="rtl" align="right">
+מחלקה קומבינציות:
+    פעולה __התחל__(רשימה_א, רשימה_ב):
+        אני.רשימה_א = רשימה_א
+        אני.רשימה_ב = רשימה_ב
+    פעולה __איטרטור__():
+        אני.א = 0
+        אני.ב = -1
+        החזר אני
+    פעולה __הבא__():
+		אני.ב = אני.ב + 1
+        
+		אם אני.ב שווהל אני.רשימה_ב.גודל():
+            אני.ב = 0
+            אני.א = אני.א + 1
+		
+        אם אני.א שווהל אני.רשימה_א.גודל():
+            זרוק __שגיאת_עצירה__()
+        החזר אני.רשימה_א[אני.א] + ' ' + אני.רשימה_ב[אני.ב]
+
+שמות = קומבינציות(רשימה('דניאל', 'דני', 'רון'), רשימה('שמעון', 'בכר'))
+
+לכל שם בתוך שמות:
+    פלוט שם
 </pre>

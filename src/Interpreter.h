@@ -8,8 +8,8 @@
 #ifndef RSHI_INTERPRETER_H
 #define RSHI_INTERPRETER_H
 
-#include <math.h>
-#include <stdlib.h>
+#include <cmath>
+#include <cstdlib>
 
 #include "Parser.h"
 
@@ -195,7 +195,6 @@ public:
     static bool truthEvaluation(Value* value);
     static bool equalityEvaluation(Value *first, Value *second);
     static void runtimeError(Token* token, string message = "unsupported operator");
-
 };
 
 #endif //RSHI_INTERPRETER_H

@@ -360,14 +360,19 @@ void Interpreter::executeTry(TryStatement *statement) {
         for (int i = 0; i < statement->filters.size(); i++)
             if (isInstance(value, evaluate(statement->filters[i])))
             {
-                Environment* newEnvironment = new Environment(environment);
-                environment = newEnvironment;
-                environment->set(*(string*)statement->catches[i].first->value, value);
+                Token *name = statement->catches[i].first;
 
-                statement->catches[i].second->accept(this);
+                if (name) {
+                    Environment *newEnvironment = new Environment(environment);
+                    environment = newEnvironment;
+                    environment->set(*(string *) name->value, value);
 
-                environment = newEnvironment->getEnclosing();
-                delete newEnvironment;
+                    statement->catches[i].second->accept(this);
+
+                    environment = newEnvironment->getEnclosing();
+                    delete newEnvironment;
+                } else
+                    statement->catches[i].second->accept(this);
 
                 caught = true;
                 break;
@@ -465,7 +470,7 @@ Value *NativeFunction::call(Interpreter *interpreter, vector<Value *> arguments)
 }
 
 Value *BoundFunction::call(Interpreter *interpreter, vector<Value *> arguments) {
-    Environment *newEnvironment = new Environment(interpreter->environment);
+    Environment *newEnvironment = new Environment(interpreter->environment, true);
     interpreter->environment = newEnvironment;
     newEnvironment->set(Self, self);
 
@@ -542,10 +547,10 @@ Value *Interpreter::createInstance(Value *callee, Token *token, const vector<Val
 }
 
 Value *Environment::get(string name) {
-    Value* value = variables[name];
-    if (value == nullptr && enclosing != nullptr)
+    if (variables.count(name))
+        return variables[name];
+    if (enclosing)
         return enclosing->get(name);
-    return value;
 }
 
 Environment *Environment::getEnclosing() {
@@ -613,9 +618,12 @@ string Value::toString(Interpreter* interpreter) {
             return "<number " + number + ">";
         }
         case Bool:
-            if (getBool())
-                return "true";
-            return "false";
+            if (interpreter) {
+                if (getBool())
+                    return "true";
+                return "false";
+            }
+            return "<bool>";
         case String: {
             const string str = getString();
             if (interpreter)

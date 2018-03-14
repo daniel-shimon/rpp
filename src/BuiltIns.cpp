@@ -9,8 +9,10 @@
 void RPP::init() {
     // region input
 
-    Interpreter::globals["קלוט"] = new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
-        interpreter->print(arguments[0], false, false);
+    Interpreter::globals["קלוט"] = new Value(new NativeFunction(-1, [](Interpreter* interpreter,
+                                                                      vector<Value*> arguments) -> Value* {
+        if (arguments.size())
+            interpreter->print(arguments[0], false, false);
         string input;
         getline(cin, input);
         return new Value(input);
@@ -40,6 +42,21 @@ void RPP::init() {
 
     Interpreter::globals["סוג"] = new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
         return new Value(arguments[0]->toString());
+    }));
+
+    // endregion
+
+    // region random
+
+
+    Interpreter::globals["אקראי"] = new Value(new NativeFunction(-1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+        double value = RPP::randDist(RPP::randEngine);
+        if (arguments.size() == 1)
+            return new Value(floor(value * arguments[0]->getNumber()));
+        if (arguments.size() == 2)
+            return new Value(floor(value * (arguments[1]->getNumber()
+                                            - arguments[0]->getNumber()) + arguments[0]->getNumber()));
+        return new Value(value);
     }));
 
     // endregion
@@ -106,7 +123,7 @@ void RPP::init() {
             {GetItem, new Value(new NativeFunction(1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 unsigned int x = static_cast<unsigned int>(arguments[0]->getNumber());
-                if (listAttr.size() >= x)
+                if (listAttr.size() <= x)
                     throw interpreter->createInstance(interpreter->globals[IndexException], nullptr,
                                                             vector<Value*>());
                 return listAttr[x];
@@ -198,15 +215,19 @@ void RPP::init() {
                             (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                         map<string, void *> &nativeAttributes = getSelf(interpreter)->nativeAttributes;
                         nativeAttributes["i"] = new int(arguments.size() >= 2 ? (int) arguments[0]->getNumber() : 0);
-                        nativeAttributes["max"] = arguments.size() >= 2 ? arguments[1] : arguments[0];
+                        nativeAttributes["max"] = new int(arguments.size() >= 2 ? arguments[1]->getNumber() :
+                                                          arguments[0]->getNumber());
                     }))},
                       {NextItem,  new Value(new NativeFunction(0, []
                               (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                           auto i = *(int*)getSelf(interpreter)->nativeAttributes["i"];
-                          double max = ((Value*)getSelf(interpreter)->nativeAttributes["max"])->getNumber();
-                          if (i >= max)
+                          auto max = *(int*)getSelf(interpreter)->nativeAttributes["max"];
+                          if (i >= max) {
+                              delete &i;
+                              delete &max;
                               throw interpreter->createInstance(interpreter->globals[StopException], nullptr,
                                                                 vector<Value*>());
+                          }
                           *(int*)getSelf(interpreter)->nativeAttributes["i"] += 1;
                           return new Value((double)i);
                       }))},
@@ -241,3 +262,8 @@ template<class T>
 T RPP::nativeAttribute(Interpreter *interpreter, string name) {
     return (T)getSelf(interpreter)->nativeAttributes[name];
 }
+
+mt19937 RPP::randEngine = mt19937((unsigned int) chrono::high_resolution_clock::now()
+        .time_since_epoch().count());
+
+uniform_real_distribution<double> RPP::randDist = uniform_real_distribution<double>(0,1);
