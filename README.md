@@ -132,7 +132,7 @@ Any of the c-style operators can be used interchangeably with the hebrew keyword
 | :------ | --: |
 | if | אם |
 | else | אחרת |
-| while | שווהל |
+| while | כלעוד |
 | continue | המשך |
 | break | שבור |
 
@@ -140,7 +140,6 @@ Any of the c-style operators can be used interchangeably with the hebrew keyword
 | :------ | --: |
 | for | לכל |
 | in | בתוך |
-| as | בתור |
 
 <a name="flow-flexible"/>
 
@@ -253,6 +252,13 @@ Similarly to Python, rpp classes can implement "magic" methods that run in certa
 ## Exceptions
 
 Exceptions are thrown and caught by class type
+
+| python-style | rpp |
+| :------ | --: |
+| try | נסה |
+| catch | תפוס |
+| as | בתור |
+| throw | זרוק |
 
 <pre dir="rtl" align="right">
 נסה:
