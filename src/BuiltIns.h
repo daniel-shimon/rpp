@@ -14,6 +14,7 @@
 #define IteratorClass "איטרטור"
 #define mapAttr (*nativeAttribute<unordered_map<string, Value*>*>(interpreter, "map"))
 #define listAttr (*(vector<Value*>*)getSelf(interpreter)->nativeAttributes["list"])
+#define strAttr (*(string*)getSelf(interpreter)->nativeAttributes["str"])
 #define exception(name) {name, new Value(new ClassValue(map<string, Value*>(), map<string, Value*>(), 0, name))}
 
 class RPP {

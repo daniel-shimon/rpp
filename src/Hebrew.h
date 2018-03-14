@@ -14,6 +14,17 @@
 #include <iostream>
 
 #include "utf8.h"
+#define Self "אני"
+#define Init "__התחל__"
+#define ToString "__טקסט__"
+#define GetItem "__קח__"
+#define SetItem "__שים__"
+#define NextItem "__הבא__"
+#define Iterator "__איטרטור__"
+#define StopException "__שגיאת_עצירה__"
+#define KeyException "__שגיאת_מפתח__"
+#define IndexException "__שגיאת_מיקום__"
+#define StringClass "טקסט"
 
 #define pprint(x) cout << x; if (endLine) cout << endl;
 

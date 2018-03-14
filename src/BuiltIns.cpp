@@ -20,14 +20,6 @@ void RPP::init() {
 
     // endregion
 
-    // region str
-
-    Interpreter::globals["טקסט"] = new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
-        return new Value(arguments[0]->toString(interpreter));
-    }));
-
-    // endregion
-
     // region number
 
     Interpreter::globals["מספר"] = new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
@@ -148,6 +140,60 @@ void RPP::init() {
                     return interpreter->equalityEvaluation(value, arguments[0]); }) - list.begin();
                 if (value >= list.size())
                     value = -1;
+                return new Value((double)value);
+            }))},
+            }), -1, "רשימה"));
+
+    // endregion
+
+    // region String
+
+    Interpreter::globals[StringClass] =
+            new Value(new ClassValue(map<string, Value*>(), map<string, Value*>
+            ({{Init,  new Value(new NativeFunction(-1, []
+                    (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+                if (arguments.size() == 1)
+                    if (arguments[0]->type == String)
+                        getSelf(interpreter)->nativeAttributes["str"] = new string(arguments[0]->getString());
+                    else
+                        getSelf(interpreter)->nativeAttributes["str"] = new string(arguments[0]->toString(interpreter));
+                else
+                    getSelf(interpreter)->nativeAttributes["str"] = new string();
+            }))},
+            {ToString, new Value(new NativeFunction(1, []
+                    (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+                return new Value(strAttr);
+            }))},
+            {"גודל",  new Value(new NativeFunction(0, []
+                    (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+                return new Value((double)utf8::distance(strAttr.begin(), strAttr.end()));
+            }))},
+            {GetItem, new Value(new NativeFunction(1, []
+                    (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+                unsigned int x = static_cast<unsigned int>(arguments[0]->getNumber());
+                if (strAttr.length() <= x)
+                    throw interpreter->createInstance(interpreter->globals[IndexException], nullptr,
+                                                            vector<Value*>());
+                return new Value(string(&strAttr[x]));
+            }))},
+            {Iterator, new Value(new NativeFunction(0, []
+                    (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+                string str = strAttr;
+                vector<Value*> chars;
+                for (unsigned int i = 0; i < str.length(); i++)
+                    chars.push_back(new Value(string(&str.at(i))));
+                return interpreter->createInstance(interpreter->globals[IteratorClass], nullptr, chars);
+            }))},
+            {"מצא",  new Value(new NativeFunction(1, []
+                    (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+                string str = strAttr;
+                string needle = arguments[0]->getString();
+                int value = -1;
+                for (unsigned int i = 0; i < str.length() && i - str.length() >= needle.length(); i++)
+                    if (str.substr(i, needle.length()) == needle) {
+                        value = i;
+                        break;
+                    }
                 return new Value((double)value);
             }))},
             }), -1, "רשימה"));
