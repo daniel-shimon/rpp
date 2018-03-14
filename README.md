@@ -40,7 +40,7 @@ Interpreted, untyped, object-oriented and super cool.
 
 ### Windows
 
-A precompiled version for Win32 is available in the release section
+A precompiled version for Win32 is available in the [release](https://github.com/daniel-shimon/rpp/releases/) section
 
 ```cmd
  g++ -std=c++11 -static-libgcc -static-libstdc++ src/*.h src/*.cpp -o rpp.exe
