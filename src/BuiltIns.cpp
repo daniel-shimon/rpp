@@ -15,7 +15,7 @@ void RPP::init() {
             interpreter->print(arguments[0], false, false);
         string input;
         getline(cin, input);
-        return new Value(input);
+        return interpreter->createString(input);
     }));
 
     // endregion
@@ -33,7 +33,7 @@ void RPP::init() {
     // region type
 
     Interpreter::globals["סוג"] = new Value(new NativeFunction(1, [](Interpreter* interpreter, vector<Value*> arguments) -> Value* {
-        return new Value(arguments[0]->toString());
+        return interpreter->createString(arguments[0]->toString());
     }));
 
     // endregion
@@ -102,7 +102,7 @@ void RPP::init() {
                 if (value.size() >= 3)
                     value = value.substr(0, value.size() - 2);
                 value += "]";
-                return new Value(value);
+                return interpreter->createString(value);
             }))},
             {"גודל",  new Value(new NativeFunction(0, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
@@ -153,7 +153,7 @@ void RPP::init() {
             ({{Init,  new Value(new NativeFunction(-1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 if (arguments.size() == 1)
-                    if (arguments[0]->type == String)
+                    if (arguments[0]->isString())
                         getSelf(interpreter)->nativeAttributes["str"] = new string(arguments[0]->getString());
                     else
                         getSelf(interpreter)->nativeAttributes["str"] = new string(arguments[0]->toString(interpreter));
@@ -162,7 +162,7 @@ void RPP::init() {
             }))},
             {ToString, new Value(new NativeFunction(1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
-                return new Value(strAttr);
+                return interpreter->createString(strAttr);
             }))},
             {"גודל",  new Value(new NativeFunction(0, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
@@ -171,32 +171,51 @@ void RPP::init() {
             {GetItem, new Value(new NativeFunction(1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 unsigned int x = static_cast<unsigned int>(arguments[0]->getNumber());
-                if (strAttr.length() <= x)
+                string str = strAttr;
+                if (utf8::distance(str.begin(), str.end()) <= x)
                     throw interpreter->createInstance(interpreter->globals[IndexException], nullptr,
                                                             vector<Value*>());
-                return new Value(string(&strAttr[x]));
+                string::iterator start = str.begin();
+                utf8::advance(start, x, str.end());
+                string::iterator end = start;
+                utf8::next(end, str.end());
+
+                return interpreter->createString(string(start, end));
             }))},
             {Iterator, new Value(new NativeFunction(0, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 string str = strAttr;
                 vector<Value*> chars;
-                for (unsigned int i = 0; i < str.length(); i++)
-                    chars.push_back(new Value(string(&str.at(i))));
+                for (string::iterator it = str.begin(); it < str.end(); utf8::next(it, str.end())) {
+                    string::iterator end = it;
+                    utf8::next(end, str.end());
+                    chars.push_back(interpreter->createString(string(it, end)));
+                }
                 return interpreter->createInstance(interpreter->globals[IteratorClass], nullptr, chars);
             }))},
             {"מצא",  new Value(new NativeFunction(1, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 string str = strAttr;
                 string needle = arguments[0]->getString();
+                int needleLen = utf8::distance(needle.begin(), needle.end());
+                string::iterator searchEnd = str.begin();
+                utf8::advance(searchEnd, utf8::distance(str.begin(), str.end()) - needleLen, str.end());
+
                 int value = -1;
-                for (unsigned int i = 0; i < str.length() && i - str.length() >= needle.length(); i++)
-                    if (str.substr(i, needle.length()) == needle) {
-                        value = i;
+                int cursor = 0;
+                for (string::iterator it = str.begin(); it <= searchEnd; utf8::next(it, str.end())) {
+                    string::iterator itEnd = it;
+                    utf8::advance(itEnd, needleLen, str.end());
+                    if (string(it, itEnd) == needle) {
+                        value = cursor;
                         break;
                     }
+                    cursor++;
+                }
+
                 return new Value((double)value);
             }))},
-            }), -1, "רשימה"));
+            }), -1, StringClass));
 
     // endregion
 
@@ -216,7 +235,7 @@ void RPP::init() {
                 if (value.size() >= 3)
                     value = value.substr(0, value.size() - 2);
                 value += "}";
-                return new Value(value);
+                return interpreter->createString(value);
             }))},
             {"גודל",  new Value(new NativeFunction(0, []
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
@@ -238,7 +257,7 @@ void RPP::init() {
                     (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
                 vector<Value*> keys;
                 for (pair<string, Value*> element : mapAttr)
-                    keys.push_back(new Value(element.first));
+                    keys.push_back(interpreter->createString(element.first));
                 return interpreter->createInstance(interpreter->globals[IteratorClass], nullptr, keys);
             }))},
             {"מכיל", new Value(new NativeFunction(1, []

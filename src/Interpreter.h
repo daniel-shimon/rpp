@@ -45,7 +45,7 @@ public:
 
 enum ValueType
 {
-    String, Number, Bool, NoneType, Function, Class, Instance,
+    Number, Bool, NoneType, Function, Class, Instance,
 };
 class Value
 {
@@ -59,13 +59,12 @@ public:
     Value(bool value): type(Bool), value((void*)value) {};
     Value(double value): type(Number), value(new double(value)) {};
     Value(double* value): type(Number), value(value) {};
-    Value(string value): type(String), value(new string(value)) {};
-    Value(string* value): type(String), value(value) {};
     Value(FunctionValue* value): type(Function), value(value) {};
     Value(ClassValue* value): type(Class), value(value) {};
     Value(InstanceValue* value): type(Instance), value(value) {};
     Value(): type(NoneType), value(nullptr) {};
     double getNumber();
+    bool isString();
     bool getBool();
     string getString();
     FunctionValue* getFunction();
@@ -189,12 +188,17 @@ public:
     void executeFor(ForStatement* statement);
 
     Value *createInstance(Value *callee, Token *token, const vector<Value *> &arguments);
+    Value *createString(Token *token, string *name);
+    inline Value *createString(string name) {createString(currentToken, new string(name));};
     void runtimeError(string message = "unsupported operator");
+    void nameError(Token* token, string name);
+    void attributeError(Token* token, string callee, string name);
     void print(Value* value, bool printNone = true, bool printEndLine = true);
     bool isInstance(Value* obj, Value* cls);
     static bool truthEvaluation(Value* value);
     static bool equalityEvaluation(Value *first, Value *second);
     static void runtimeError(Token* token, string message = "unsupported operator");
+
 };
 
 #endif //RSHI_INTERPRETER_H

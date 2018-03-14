@@ -25,6 +25,7 @@
 #define KeyException "__שגיאת_מפתח__"
 #define IndexException "__שגיאת_מיקום__"
 #define StringClass "טקסט"
+#define AddOperator "__חיבור__"
 
 #define pprint(x) cout << x; if (endLine) cout << endl;
 

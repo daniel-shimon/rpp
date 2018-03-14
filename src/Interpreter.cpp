@@ -22,8 +22,9 @@ Value* Interpreter::evaluateLiteral(LiteralExpression* literal) {
             return new Value(true);
         case None:
             return Value::None;
-        case StringLiteral:
-            return new Value((string*)literal->token->value);
+        case StringLiteral: {
+            return createString(literal->token, (string*)literal->token->value);
+        }
         case NumberLiteral:
             return new Value((double*)literal->token->value);
     }
@@ -78,8 +79,12 @@ Value* Interpreter::evaluateBinary(BinaryExpression *binary) {
         case Plus:
             if (first->type == Number && second->type == Number)
                 return new Value(first->getNumber() + second->getNumber());
-            if (first->type == String && second->type == String)
-                return new Value(first->getString() + second->getString());
+            if (first->type == Instance && second->type == Instance) {
+                if (!first->getInstance()->attributes.count(AddOperator))
+                    attributeError(binary->op, first->toString(), AddOperator);
+                return first->getInstance()->attributes[AddOperator]
+                        ->getFunction()->call(this, vector<Value*>({second}));
+            }
             break;
         case Minus:
             return new Value(first->getNumber() - second->getNumber());
@@ -88,23 +93,23 @@ Value* Interpreter::evaluateBinary(BinaryExpression *binary) {
         case Multiply:
             if (first->type == Number && second->type == Number)
                 return new Value(first->getNumber() * second->getNumber());
-            if ((first->type == String && second->type == Number) || (first->type == Number && second->type == String))
+            if ((first->isString() && second->type == Number) || (first->type == Number && second->isString()))
             {
                 string repeat;
                 int count;
-                if (first->type == String && second->type == Number)
+                if (first->isString())
                 {
                     repeat = first->getString();
-                    count = (int) second->getNumber();
+                    count = (int)second->getNumber();
                 } else
                 {
                     repeat = second->getString();
-                    count = (int) first->getNumber();
+                    count = (int)first->getNumber();
                 }
                 string value = "";
                 for (; count > 0; count--)
                     value += repeat;
-                return new Value(value);
+                return createString(binary->op, new string(value));
             }
         case Power:
             return new Value(pow(first->getNumber(), second->getNumber()));
@@ -119,8 +124,7 @@ Value *Interpreter::evaluateVariable(VariableExpression *variable) {
     Value* value = environment->get(*(string*)variable->token->value);
 
     if (value == nullptr)
-        throw RPPException("Name error", variable->token->errorSignature(),
-                           *(string*)variable->token->value + " is not defined");
+        nameError(variable->token, *(string*)variable->token->value);
 
     return value;
 }
@@ -198,8 +202,7 @@ Value *Interpreter::evaluateGet(GetExpression *get) {
 
 
     if (value == nullptr)
-        throw RPPException("Attribute error", get->token->errorSignature(),
-                           callee->toString() + " has no attribute " + name);
+        attributeError(get->token, callee->toString(), name);
 
     return value;
 }
@@ -218,11 +221,11 @@ bool Interpreter::equalityEvaluation(Value* first, Value* second) {
                 return first->getBool() == second->getBool();
             case Number:
                 return first->getNumber() == second->getNumber();
-            case String:
-                return first->getString() == second->getString();
             case NoneType:
                 return second->type == NoneType;
             default:
+                if (first->isString() && second->isString())
+                    return first->getString() == second->getString();
                 return first == second;
         }
 
@@ -495,11 +498,11 @@ void Interpreter::print(Value* value, bool printNone, bool printEndLine) {
                 break;
             }
             return;
-        case String:
-            Hebrew::print(value->getString());
-            break;
         default:
-            Hebrew::print(value->toString(this));
+            if (value->isString())
+                Hebrew::print(value->getString());
+            else
+                Hebrew::print(value->toString(this));
         }
 
     if (printEndLine)
@@ -514,6 +517,11 @@ void Interpreter::runtimeError(Token* token, string message) {
 
 void Interpreter::runtimeError(string message) {
     runtimeError(currentToken, message);
+}
+
+void Interpreter::nameError(Token* token, string name) {
+    throw RPPException("Name error", token->errorSignature(),
+                       name + " is not defined");
 }
 
 void Environment::set(string name, Value *value) {
@@ -543,6 +551,12 @@ Value *Interpreter::createInstance(Value *callee, Token *token, const vector<Val
             runtimeError(token, "invalid argument count to " +
                                 callee->toString() + " constructor " + init->toString());
     }
+    return instance;
+}
+
+Value *Interpreter::createString(Token *token, string *name) {
+    Value *instance = createInstance(globals[StringClass], token, vector<Value*>());
+    instance->getInstance()->nativeAttributes["str"] = name;
     return instance;
 }
 
@@ -576,9 +590,9 @@ bool Value::getBool() {
 }
 
 string Value::getString() {
-    if (type != String)
+    if (type != Instance || getInstance()->klass->name != StringClass)
         Interpreter::runtimeError(token, "value " + toString() + " is not a String");
-    return *(string*)value;
+    return *(string*)getInstance()->nativeAttributes["str"];
 }
 
 FunctionValue* Value::getFunction() {
@@ -624,12 +638,6 @@ string Value::toString(Interpreter* interpreter) {
                 return "false";
             }
             return "<bool>";
-        case String: {
-            const string str = getString();
-            if (interpreter)
-                return "'" + str + "'";
-            return "<string '" + str + "'>";
-        }
         case Function: {
             int arity = getFunction()->arity;
             string str = "<function";
@@ -653,8 +661,12 @@ string Value::toString(Interpreter* interpreter) {
             return str;
         }
         case Instance: {
-            if (interpreter && getInstance()->attributes.count(ToString))
-                return getInstance()->attributes[ToString]->getFunction()->call(interpreter)->getString();
+            if (interpreter && getInstance()->attributes.count(ToString)) {
+                string str = getInstance()->attributes[ToString]->getFunction()->call(interpreter)->getString();
+                if (isString())
+                    return "'" + str + "'";
+                return str;
+            }
 
             string str = "<";
             if (!getInstance()->klass->name.empty())
@@ -666,10 +678,19 @@ string Value::toString(Interpreter* interpreter) {
     }
 }
 
+bool Value::isString() {
+    return type == Instance && getInstance()->klass->name == StringClass;
+}
+
 // endregion
 
 // region globals
 
 map<string, Value*> Interpreter::globals = {};
+
+void Interpreter::attributeError(Token *token, string callee, string name) {
+    throw RPPException("Attribute error", token->errorSignature(),
+                       callee + " has no attribute " + name);
+}
 
 // endregion
