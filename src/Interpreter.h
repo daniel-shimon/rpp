@@ -188,6 +188,8 @@ public:
     void executeFor(ForStatement* statement);
 
     Value *createInstance(Value *callee, Token *token, const vector<Value *> &arguments);
+    inline Value *createInstance(Value *callee, const vector<Value *> &arguments)
+        {createInstance(callee, currentToken, arguments);};
     Value *createString(Token *token, string *name);
     inline Value *createString(string name) {createString(currentToken, new string(name));};
     void runtimeError(string message = "unsupported operator");
