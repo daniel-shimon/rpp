@@ -71,6 +71,7 @@ namespace Hebrew {
     string englishify(string value);
     void print(string value, bool endLine, bool rtl=true);
     void print(const char* value, bool endLine, bool rtl=true);
+    string read(bool rtl=true);
 };
 
 #endif //RPP_HEBREW_H

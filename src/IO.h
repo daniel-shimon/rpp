@@ -69,7 +69,7 @@ public:
         if (!WriteConsoleW(hStdout, s.c_str(), (DWORD) s.size(), &out, NULL))
             windowsError
         if (out != s.size())
-            consoleError("Cannot write " + to_string(s.size()) + " characters");
+            consoleError("Cannot write " + to_string(s.size()) + " characters")
     }
 
     wchar_t getWChar() {
@@ -85,7 +85,7 @@ public:
     void writeWChar(wchar_t ch) {
         DWORD written;
         if (!WriteConsoleW(hStdout, &ch, 1, &written, NULL))
-            windowsError;
+            windowsError
         if (written != 1)
             consoleError("Cannot write character")
     }
@@ -418,7 +418,7 @@ public:
 
                     current.s += ch;
                     if (current.rtl) {
-                        writeStr(clearCell);
+                        writeStr(wstring{ch, BACKSPACE});
                         moveCursorRTL(-1);
                     } else {
                         auto loc = cursorLocation();

@@ -13,13 +13,7 @@ void RPP::init() {
                                                                       vector<Value*> arguments) -> Value* {
         if (arguments.size())
             interpreter->print(arguments[0], false, false);
-        #ifdef ComplexOutput
-        if (IO->enabled)
-            return interpreter->createString(IO->complexInputRTL());
-        #endif
-        string input;
-        getline(cin, input);
-        return interpreter->createString(input);
+        return interpreter->createString(Hebrew::read());
     }));
 
     // endregion

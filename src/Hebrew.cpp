@@ -9,8 +9,7 @@ string Hebrew::englishify(string value) {
     string output = "";
 
     string::iterator it = value.begin();
-    while (it != value.end())
-    {
+    while (it != value.end()) {
         string::iterator prev = it;
         uint32_t ch = utf8::next(it, value.end());
         if (charMap.count(ch) == 0)
@@ -21,8 +20,8 @@ string Hebrew::englishify(string value) {
     return output;
 }
 
-void Hebrew::print(string value, bool endLine, bool rtl)  {
-    #ifdef ComplexOutput
+void Hebrew::print(string value, bool endLine, bool rtl) {
+#ifdef ComplexOutput
     if (IO->enabled) {
         if (rtl) {
             IO->rightAlign();
@@ -33,10 +32,23 @@ void Hebrew::print(string value, bool endLine, bool rtl)  {
         }
         return;
     }
-    #endif
+#endif
     pprint(Hebrew::englishify(value));
 }
 
-void Hebrew::print(const char* value, bool endLine, bool rtl) {
+void Hebrew::print(const char *value, bool endLine, bool rtl) {
     print(string(value), endLine, rtl);
+}
+
+string Hebrew::read(bool rtl) {
+#ifdef ComplexOutput
+    if (IO->enabled)
+        if (rtl)
+            return IO->complexInputRTL();
+        else
+            return IO->complexInputLTR();
+#endif
+    string input;
+    getline(cin, input);
+    return input;
 }
