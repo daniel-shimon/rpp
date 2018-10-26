@@ -21,10 +21,22 @@ string Hebrew::englishify(string value) {
     return output;
 }
 
-template<> void Hebrew::print(string value, bool endLine)  {
+void Hebrew::print(string value, bool endLine, bool rtl)  {
+    #ifdef ComplexOutput
+    if (IO->enabled) {
+        if (rtl) {
+            IO->rightAlign();
+            IO->complexOutputRTL(value, endLine);
+        } else {
+            IO->leftAlign();
+            IO->complexOutputLTR(value, endLine);
+        }
+        return;
+    }
+    #endif
     pprint(Hebrew::englishify(value));
 }
 
-template<> void Hebrew::print(const char* value, bool endLine) {
-    pprint(Hebrew::englishify(string(value)));
+void Hebrew::print(const char* value, bool endLine, bool rtl) {
+    print(string(value), endLine, rtl);
 }

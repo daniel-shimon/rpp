@@ -43,7 +43,7 @@ Interpreted, untyped, object-oriented and super cool.
 A precompiled version for Win32 is available in the [release](https://github.com/daniel-shimon/rpp/releases/) section
 
 ```cmd
- g++ -std=c++11 -static-libgcc -static-libstdc++ src/*.h src/*.cpp -o rpp.exe
+ g++ -std=c++11 -static src/*.h src/*.cpp -o rpp.exe
 ```
 
 <a name="install-linux"/>

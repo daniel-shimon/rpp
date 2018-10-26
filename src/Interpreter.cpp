@@ -7,15 +7,14 @@
 
 // region evaluation
 
-Value* Interpreter::evaluate(Expression* expression) {
+Value *Interpreter::evaluate(Expression *expression) {
     if (expression->implicitValue)
         return expression->implicitValue;
     return expression->accept(this);
 }
 
-Value* Interpreter::evaluateLiteral(LiteralExpression* literal) {
-    switch (literal->token->type)
-    {
+Value *Interpreter::evaluateLiteral(LiteralExpression *literal) {
+    switch (literal->token->type) {
         case False:
             return new Value(false);
         case True:
@@ -23,25 +22,24 @@ Value* Interpreter::evaluateLiteral(LiteralExpression* literal) {
         case None:
             return Value::None;
         case StringLiteral: {
-            return createString(literal->token, (string*)literal->token->value);
+            return createString(literal->token, (string *) literal->token->value);
         }
         case NumberLiteral:
-            return new Value((double*)literal->token->value);
+            return new Value((double *) literal->token->value);
     }
 
     runtimeError(literal->token, "unsupported literal");
 }
 
-Value* Interpreter::evaluateGrouping(GroupingExpression *grouping) {
+Value *Interpreter::evaluateGrouping(GroupingExpression *grouping) {
     return this->evaluate(grouping->value);
 }
 
-Value* Interpreter::evaluateUnary(UnaryExpression *unary) {
-    Value* value = evaluate(unary->expression);
+Value *Interpreter::evaluateUnary(UnaryExpression *unary) {
+    Value *value = evaluate(unary->expression);
     value->token = unary->op;
 
-    switch (unary->op->type)
-    {
+    switch (unary->op->type) {
         case Not:
             return new Value(!truthEvaluation(value));
         case Minus:
@@ -51,19 +49,18 @@ Value* Interpreter::evaluateUnary(UnaryExpression *unary) {
     runtimeError(unary->op);
 }
 
-Value* Interpreter::evaluateBinary(BinaryExpression *binary) {
+Value *Interpreter::evaluateBinary(BinaryExpression *binary) {
     if (binary->op->type == And)
         return new Value(truthEvaluation(evaluate(binary->first)) && truthEvaluation(evaluate(binary->second)));
     if (binary->op->type == Or)
         return new Value(truthEvaluation(evaluate(binary->first)) || truthEvaluation(evaluate(binary->second)));
 
-    Value* first = evaluate(binary->first);
+    Value *first = evaluate(binary->first);
     first->token = binary->op;
-    Value* second = evaluate(binary->second);
+    Value *second = evaluate(binary->second);
     second->token = binary->op;
 
-    switch (binary->op->type)
-    {
+    switch (binary->op->type) {
         case Equals:
             return new Value(equalityEvaluation(first, second));
         case NotEquals:
@@ -83,7 +80,7 @@ Value* Interpreter::evaluateBinary(BinaryExpression *binary) {
                 if (!first->getInstance()->attributes.count(AddOperator))
                     attributeError(binary->op, first->toString(), AddOperator);
                 return first->getInstance()->attributes[AddOperator]
-                        ->getFunction()->call(this, vector<Value*>({second}));
+                        ->getFunction()->call(this, vector<Value *>({second}));
             }
             break;
         case Minus:
@@ -93,18 +90,15 @@ Value* Interpreter::evaluateBinary(BinaryExpression *binary) {
         case Multiply:
             if (first->type == Number && second->type == Number)
                 return new Value(first->getNumber() * second->getNumber());
-            if ((first->isString() && second->type == Number) || (first->type == Number && second->isString()))
-            {
+            if ((first->isString() && second->type == Number) || (first->type == Number && second->isString())) {
                 string repeat;
                 int count;
-                if (first->isString())
-                {
+                if (first->isString()) {
                     repeat = first->getString();
-                    count = (int)second->getNumber();
-                } else
-                {
+                    count = (int) second->getNumber();
+                } else {
                     repeat = second->getString();
-                    count = (int)first->getNumber();
+                    count = (int) first->getNumber();
                 }
                 string value = "";
                 for (; count > 0; count--)
@@ -121,26 +115,26 @@ Value* Interpreter::evaluateBinary(BinaryExpression *binary) {
 }
 
 Value *Interpreter::evaluateVariable(VariableExpression *variable) {
-    Value* value = environment->get(*(string*)variable->token->value);
+    Value *value = environment->get(*(string *) variable->token->value);
 
     if (value == nullptr)
-        nameError(variable->token, *(string*)variable->token->value);
+        nameError(variable->token, *(string *) variable->token->value);
 
     return value;
 }
 
-Value *Interpreter::evaluateCall(CallExpression* call) {
-    Value* callee = evaluate(call->callee);
+Value *Interpreter::evaluateCall(CallExpression *call) {
+    Value *callee = evaluate(call->callee);
     Token *token = call->token;
     callee->token = token;
     currentToken = token;
-    vector<Value*> arguments;
+    vector<Value *> arguments;
 
-    for (Expression* expression : call->arguments)
+    for (Expression *expression : call->arguments)
         arguments.push_back(evaluate(expression));
 
     if (callee->type == Function) {
-        FunctionValue* function = callee->getFunction();
+        FunctionValue *function = callee->getFunction();
 
         if (function->arity == arguments.size() || function->arity == -1)
             return function->call(this, arguments);
@@ -159,17 +153,17 @@ Value *Interpreter::evaluateCall(CallExpression* call) {
 Value *Interpreter::evaluateFunction(FunctionExpression *function) {
     vector<string> arguments;
 
-    for (Token* token : function->arguments)
-        arguments.push_back(*(string*)token->value);
+    for (Token *token : function->arguments)
+        arguments.push_back(*(string *) token->value);
 
     return new Value(new DeclaredFunction(arguments, function->action));
 }
 
 Value *Interpreter::evaluateClass(ClassExpression *klass) {
     int initArity = 0;
-    map<string, Value*> staticAttributes, methods;
-    for (AssignStatement* statement : klass->actions) {
-        Value* value = evaluate(statement->value);
+    map<string, Value *> staticAttributes, methods;
+    for (AssignStatement *statement : klass->actions) {
+        Value *value = evaluate(statement->value);
         string name = *(string *) statement->token->value;
         if (value->type == Function) {
             methods[name] = value;
@@ -183,10 +177,11 @@ Value *Interpreter::evaluateClass(ClassExpression *klass) {
 }
 
 Value *Interpreter::evaluateGet(GetExpression *get) {
-    Value* callee = evaluate(get->callee);
-    string name = get->name.empty() ? *(string*)get->token->value : get->name;
+    Value *callee = evaluate(get->callee);
+    currentToken = get->token;
+    string name = get->name.empty() ? *(string *) get->token->value : get->name;
 
-    Value* value = nullptr;
+    Value *value = nullptr;
     if (callee->type == Instance) {
         if (callee->getInstance()->klass->staticAttributes.count(name))
             value = callee->getInstance()->klass->staticAttributes[name];
@@ -207,16 +202,15 @@ Value *Interpreter::evaluateGet(GetExpression *get) {
     return value;
 }
 
-bool Interpreter::truthEvaluation(Value* value) {
+bool Interpreter::truthEvaluation(Value *value) {
     if (value->type == Bool)
         return value->getBool();
     return value->type != NoneType;
 }
 
-bool Interpreter::equalityEvaluation(Value* first, Value* second) {
+bool Interpreter::equalityEvaluation(Value *first, Value *second) {
     if (first->type == second->type)
-        switch (first->type)
-        {
+        switch (first->type) {
             case Bool:
                 return first->getBool() == second->getBool();
             case Number:
@@ -236,48 +230,41 @@ bool Interpreter::equalityEvaluation(Value* first, Value* second) {
 
 // region execution
 
-Value* Interpreter::execute(vector<Statement *> statements, bool evaluate) {
-    Value* returnValue = Value::None;
-    for (Statement* statement : statements)
-    {
-        try
-        {
+Value *Interpreter::execute(vector<Statement *> statements, bool evaluate) {
+    Value *returnValue = Value::None;
+    for (Statement *statement : statements) {
+        try {
             if (evaluate)
-                if (ExpressionStatement* expression = dynamic_cast<ExpressionStatement*>(statement)) {
+                if (ExpressionStatement *expression = dynamic_cast<ExpressionStatement *>(statement)) {
                     returnValue = executeExpression(expression);
                     break;
                 }
             statement->accept(this);
         }
-        catch (ReturnValue value)
-        {
+        catch (ReturnValue value) {
             runtimeError(value.token, "return statement from non-function");
         }
-        catch (BreakValue value)
-        {
+        catch (BreakValue value) {
             runtimeError(value.token, "break statement from non-loop");
         }
-        catch (ContinueValue value)
-        {
+        catch (ContinueValue value) {
             runtimeError(value.token, "continue statement from non-loop");
         }
-        catch (Value* value)
-        {
+        catch (Value *value) {
             runtimeError(value->token, value->toString() + " thrown without catch");
         }
     }
     return returnValue;
 }
 
-Value* Interpreter::executeExpression(ExpressionStatement *statement) {
+Value *Interpreter::executeExpression(ExpressionStatement *statement) {
     return evaluate(statement->expression);
 }
 
 void Interpreter::executeCommand(CommandStatement *statement) {
     Value *value = statement->expression ? evaluate(statement->expression) : Value::None;
     value->token = statement->command;
-    switch (statement->command->type)
-    {
+    switch (statement->command->type) {
         case Print:
             return print(value);
         case Exit:
@@ -296,7 +283,7 @@ void Interpreter::executeCommand(CommandStatement *statement) {
 }
 
 void Interpreter::executeAssign(AssignStatement *statement) {
-    string name = *(string*)statement->token->value;
+    string name = *(string *) statement->token->value;
     Value *value = evaluate(statement->value);
     if (value->type == Function) {
         value->getFunction()->name = name;
@@ -310,7 +297,7 @@ void Interpreter::executeIf(IfStatement *statement) {
     if (truthEvaluation(evaluate(statement->condition)))
         return statement->action->accept(this);
 
-    for (pair<Expression*, Statement*> elif : statement->elifs)
+    for (pair<Expression *, Statement *> elif : statement->elifs)
         if (truthEvaluation(evaluate(elif.first)))
             return elif.second->accept(this);
 
@@ -319,10 +306,10 @@ void Interpreter::executeIf(IfStatement *statement) {
 }
 
 void Interpreter::executeBlock(BlockStatement *statement) {
-    Environment* newEnvironment = new Environment(environment);
+    Environment *newEnvironment = new Environment(environment);
     environment = newEnvironment;
 
-    for (Statement* inlineStatement : statement->statements)
+    for (Statement *inlineStatement : statement->statements)
         inlineStatement->accept(this);
 
     environment = newEnvironment->getEnclosing();
@@ -330,8 +317,7 @@ void Interpreter::executeBlock(BlockStatement *statement) {
 }
 
 void Interpreter::executeWhile(WhileStatement *statement) {
-    while (truthEvaluation(evaluate(statement->condition)))
-    {
+    while (truthEvaluation(evaluate(statement->condition))) {
         try {
             statement->action->accept(this);
         }
@@ -345,9 +331,9 @@ void Interpreter::executeWhile(WhileStatement *statement) {
 }
 
 void Interpreter::executeSet(SetStatement *statement) {
-    Value* callee = evaluate(statement->callee);
-    Value* value = evaluate(statement->value);
-    string name = *(string*)statement->name->value;
+    Value *callee = evaluate(statement->callee);
+    Value *value = evaluate(statement->value);
+    string name = *(string *) statement->name->value;
     if (callee->getInstance()->klass->staticAttributes.count(name))
         callee->getInstance()->klass->staticAttributes[name] = value;
     else
@@ -356,13 +342,12 @@ void Interpreter::executeSet(SetStatement *statement) {
 
 void Interpreter::executeTry(TryStatement *statement) {
     bool caught = false;
-    Value* thrown = nullptr;
+    Value *thrown = nullptr;
     try {
         statement->action->accept(this);
-    } catch (Value* value) {
+    } catch (Value *value) {
         for (int i = 0; i < statement->filters.size(); i++)
-            if (isInstance(value, evaluate(statement->filters[i])))
-            {
+            if (isInstance(value, evaluate(statement->filters[i]))) {
                 Token *name = statement->catches[i].first;
 
                 if (name) {
@@ -397,37 +382,32 @@ void Interpreter::executeTry(TryStatement *statement) {
 
 void Interpreter::executeFor(ForStatement *statement) {
     GetExpression *getIterExpression = new GetExpression(statement->iterator, statement->name, Iterator);
-    CallExpression* callIterExpression = new CallExpression(statement->name, getIterExpression, vector<Expression*>());
+    CallExpression *callIterExpression = new CallExpression(statement->name, getIterExpression, vector<Expression *>());
 
-    Value* iterator = evaluateCall(callIterExpression);
+    Value *iterator = evaluateCall(callIterExpression);
     callIterExpression->implicitValue = iterator;
     GetExpression *getExpression = new GetExpression(callIterExpression, statement->name, NextItem);
-    CallExpression* callExpression = new CallExpression(statement->name, getExpression, vector<Expression*>());
-    string name = *(string*)statement->name->value;
+    CallExpression *callExpression = new CallExpression(statement->name, getExpression, vector<Expression *>());
+    string name = *(string *) statement->name->value;
 
-    Environment* newEnvironment = new Environment(environment);
+    Environment *newEnvironment = new Environment(environment);
     environment = newEnvironment;
 
-    while (true)
-    {
-        try
-        {
-            Value* value = evaluateCall(callExpression);
+    while (true) {
+        try {
+            Value *value = evaluateCall(callExpression);
             environment->set(name, value);
             statement->action->accept(this);
         }
-        catch (Value* value)
-        {
+        catch (Value *value) {
             if (!isInstance(value, globals[StopException]))
                 throw value;
             break;
         }
-        catch (ContinueValue value)
-        {
+        catch (ContinueValue value) {
             continue;
         }
-        catch (BreakValue value)
-        {
+        catch (BreakValue value) {
             break;
         }
     }
@@ -440,20 +420,18 @@ void Interpreter::executeFor(ForStatement *statement) {
     delete callIterExpression;
 }
 
-Value *DeclaredFunction::call(Interpreter *interpreter, vector<Value*> arguments) {
-    Environment* newEnvironment = new Environment(interpreter->environment, true);
+Value *DeclaredFunction::call(Interpreter *interpreter, vector<Value *> arguments) {
+    Environment *newEnvironment = new Environment(interpreter->environment, true);
     interpreter->environment = newEnvironment;
 
     for (int i = 0; i < argumentNames.size(); i++)
         newEnvironment->set(argumentNames[i], arguments[i]);
 
-    Value* value = Value::None;
-    try
-    {
+    Value *value = Value::None;
+    try {
         action->accept(interpreter);
     }
-    catch (ReturnValue returnValue)
-    {
+    catch (ReturnValue returnValue) {
         value = returnValue.value;
     }
 
@@ -464,7 +442,7 @@ Value *DeclaredFunction::call(Interpreter *interpreter, vector<Value*> arguments
 }
 
 Value *NativeFunction::call(Interpreter *interpreter, vector<Value *> arguments) {
-    Value* value = ((Value* (*)(Interpreter*, vector<Value*>))nativeCall)(interpreter, arguments);
+    Value *value = ((Value *(*)(Interpreter *, vector<Value *>)) nativeCall)(interpreter, arguments);
 
     if (value == nullptr)
         return Value::None;
@@ -477,7 +455,7 @@ Value *BoundFunction::call(Interpreter *interpreter, vector<Value *> arguments) 
     interpreter->environment = newEnvironment;
     newEnvironment->set(Self, self);
 
-    Value* value = function->call(interpreter, arguments);
+    Value *value = function->call(interpreter, arguments);
 
     interpreter->environment = newEnvironment->getEnclosing();
     delete newEnvironment;
@@ -489,27 +467,23 @@ Value *BoundFunction::call(Interpreter *interpreter, vector<Value *> arguments) 
 
 // region utils
 
-void Interpreter::print(Value* value, bool printNone, bool printEndLine) {
-    switch (value->type)
-    {
+void Interpreter::print(Value *value, bool printNone, bool printEndLine) {
+    switch (value->type) {
         case NoneType:
             if (printNone) {
-                Hebrew::print(value->toString());
+                Hebrew::print(value->toString(), printEndLine);
                 break;
             }
             return;
         default:
             if (value->isString())
-                Hebrew::print(value->getString());
+                Hebrew::print(value->getString(), printEndLine);
             else
-                Hebrew::print(value->toString(this));
-        }
-
-    if (printEndLine)
-        cout << endl;
+                Hebrew::print(value->toString(this), printEndLine);
+    }
 }
 
-void Interpreter::runtimeError(Token* token, string message) {
+void Interpreter::runtimeError(Token *token, string message) {
     if (token)
         throw RPPException("Runtime Error", token->errorSignature(), message);
     throw RPPException("Runtime Error", "", message);
@@ -519,7 +493,7 @@ void Interpreter::runtimeError(string message) {
     runtimeError(currentToken, message);
 }
 
-void Interpreter::nameError(Token* token, string name) {
+void Interpreter::nameError(Token *token, string name) {
     throw RPPException("Name error", token->errorSignature(),
                        name + " is not defined");
 }
@@ -536,14 +510,15 @@ bool Interpreter::isInstance(Value *obj, Value *cls) {
 }
 
 Value *Interpreter::createInstance(Value *callee, Token *token, const vector<Value *> &arguments) {
-    Value* instance = new Value(new InstanceValue(callee->getClass()));
-    map<string, Value*> methods;
-    for (pair<string, Value*> method : callee->getClass()->methods)
+    Value *instance = new Value(new InstanceValue(callee->getClass()));
+    instance->token = token;
+    map<string, Value *> methods;
+    for (pair<string, Value *> method : callee->getClass()->methods)
         methods[method.first] = new Value(
                 new BoundFunction(instance, method.second->getFunction(), method.first));
     instance->getInstance()->attributes.insert(methods.begin(), methods.end());
 
-    if (Value* init = methods[Init]) {
+    if (Value *init = methods[Init]) {
         int initArity = instance->getInstance()->klass->initArity;
         if (initArity == arguments.size() || initArity == -1)
             init->getFunction()->call(this, arguments);
@@ -555,7 +530,7 @@ Value *Interpreter::createInstance(Value *callee, Token *token, const vector<Val
 }
 
 Value *Interpreter::createString(Token *token, string *name) {
-    Value *instance = createInstance(globals[StringClass], token, vector<Value*>());
+    Value *instance = createInstance(globals[StringClass], token, vector<Value *>());
     instance->getInstance()->nativeAttributes["str"] = name;
     return instance;
 }
@@ -575,55 +550,54 @@ Environment *Environment::getEnclosing() {
 
 // region values
 
-Value* Value::None = new Value();
+Value *Value::None = new Value();
 
 double Value::getNumber() {
     if (type != Number)
         Interpreter::runtimeError(token, "value " + toString() + " is not a Number");
-    return *(double*)value;
+    return *(double *) value;
 }
 
 bool Value::getBool() {
     if (type != Bool)
         Interpreter::runtimeError(token, "value " + toString() + " is not a Bool");
-    return (bool)value;
+    return (bool) value;
 }
 
 string Value::getString() {
     if (type != Instance || getInstance()->klass->name != StringClass)
         Interpreter::runtimeError(token, "value " + toString() + " is not a String");
-    return *(string*)getInstance()->nativeAttributes["str"];
+    return *(string *) getInstance()->nativeAttributes["str"];
 }
 
-FunctionValue* Value::getFunction() {
+FunctionValue *Value::getFunction() {
     if (type != Function)
         Interpreter::runtimeError(token, "value " + toString() + " is not a Function");
-    return (FunctionValue*)value;
+    return (FunctionValue *) value;
 }
 
 ClassValue *Value::getClass() {
     if (type != Class)
         Interpreter::runtimeError(token, "value " + toString() + " is not a Class");
-    return (ClassValue*)value;
+    return (ClassValue *) value;
 }
 
 InstanceValue *Value::getInstance() {
     if (type != Instance)
         Interpreter::runtimeError(token, "value " + toString() + " is not an Instance");
-    return (InstanceValue*)value;
+    return (InstanceValue *) value;
 }
 
-string Value::toString(Interpreter* interpreter) {
-    switch (type)
-    {
+string Value::toString(Interpreter *interpreter) {
+    switch (type) {
         case NoneType:
             return "none";
         case Number: {
             double value = getNumber();
             string number;
 
-            if ((int)value == value)
-                number = to_string((int)value);
+            if ((int) value == value)
+                number = to_string((int) value);
             else
                 number = to_string(getNumber());
 
@@ -670,7 +644,7 @@ string Value::toString(Interpreter* interpreter) {
 
             string str = "<";
             if (!getInstance()->klass->name.empty())
-                str +=  "'" + getInstance()->klass->name + "' ";
+                str += "'" + getInstance()->klass->name + "' ";
             str += "instance>";
 
             return str;
@@ -686,7 +660,7 @@ bool Value::isString() {
 
 // region globals
 
-map<string, Value*> Interpreter::globals = {};
+map<string, Value *> Interpreter::globals = {};
 
 void Interpreter::attributeError(Token *token, string callee, string name) {
     throw RPPException("Attribute error", token->errorSignature(),

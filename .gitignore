@@ -34,3 +34,4 @@
 # Development environment
 .idea
 cmake-build-debug/
+.vscode/

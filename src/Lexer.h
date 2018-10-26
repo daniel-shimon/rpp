@@ -7,6 +7,7 @@
 #define RSHI_LEXER_H
 
 #include "Hebrew.h"
+#define TokenType _TokenType // handle winapi override
 
 enum TokenType
 {
@@ -40,18 +41,6 @@ public:
             lexeme(std::move(lexeme)), type(type), value(value), line(line), index(index) {}
     string errorSignature();
     static string errorSignature(int line, int index, string lexeme = "");
-};
-
-class RPPException : public exception
-{
-private:
-    string type;
-    string signature;
-    string message;
-public:
-    RPPException(string type, string signature, string message = "") :
-            type(type), signature(signature), message(message) {};
-    virtual const char* what() const throw();
 };
 
 //region Reserved

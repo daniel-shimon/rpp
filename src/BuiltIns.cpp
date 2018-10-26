@@ -13,6 +13,10 @@ void RPP::init() {
                                                                       vector<Value*> arguments) -> Value* {
         if (arguments.size())
             interpreter->print(arguments[0], false, false);
+        #ifdef ComplexOutput
+        if (IO->enabled)
+            return interpreter->createString(IO->complexInputRTL());
+        #endif
         string input;
         getline(cin, input);
         return interpreter->createString(input);
@@ -211,6 +215,12 @@ void RPP::init() {
                 }
 
                 return new Value((double)value);
+            }))},
+            {AddOperator,  new Value(new NativeFunction(1, []
+                    (Interpreter* interpreter, vector<Value*> arguments) -> Value* {
+                if (arguments[0]->isString())
+                    return interpreter->createString(strAttr + arguments[0]->getString());
+                return interpreter->createString(strAttr + arguments[0]->toString(interpreter));
             }))},
             }), -1, StringClass));
 

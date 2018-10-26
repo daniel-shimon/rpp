@@ -6,14 +6,13 @@
 #ifndef RPP_HEBREW_H
 #define RPP_HEBREW_H
 
-#include <string>
+#include "IO.h"
+#include "utf8.h"
+
 #include <vector>
 #include <map>
-#include <exception>
 #include <algorithm>
-#include <iostream>
 
-#include "utf8.h"
 #define Self "אני"
 #define Init "__התחל__"
 #define ToString "__טקסט__"
@@ -28,8 +27,6 @@
 #define AddOperator "__חיבור__"
 
 #define pprint(x) cout << x; if (endLine) cout << endl;
-
-using namespace std;
 
 namespace Hebrew {
     namespace {
@@ -72,11 +69,8 @@ namespace Hebrew {
     }
 
     string englishify(string value);
-    template <class T> void print(T value, bool endLine = false) {
-        pprint(value);
-    };
-    template<> void print(string value, bool endLine);
-    template<> void print(const char* value, bool endLine);
+    void print(string value, bool endLine, bool rtl=true);
+    void print(const char* value, bool endLine, bool rtl=true);
 };
 
 #endif //RPP_HEBREW_H

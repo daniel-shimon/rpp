@@ -94,7 +94,7 @@ vector<Token*> Lexer::scan() {
                 else if (isAlpha(ch) || ch == '_')
                     scanIdentifier();
                 else
-                    throw RPPException("unexpected Character", Token::errorSignature(line, index), string(1, (char)ch));
+                    throw RPPException("Unexpected character", Token::errorSignature(line, index), string(1, (char)ch));
         }
     }
 
@@ -200,10 +200,4 @@ string Token::errorSignature(int line, int index, string lexeme) {
 
 bool Lexer::isAlpha(uint32_t ch) {
     return (1488 <= ch && ch <= 1514) || ('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z');
-}
-
-const char *RPPException::what() const throw() {
-    if (message.empty())
-        return (new string(type + " " + signature))->c_str();
-    return (new string(type + " " + signature + ": " + message))->c_str();
 }

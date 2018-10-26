@@ -8,9 +8,11 @@
 
 #include <fstream>
 
-using namespace std;
-
 string version = "0.1";
+
+void print(string s) {
+    Hebrew::print(s, true, false);
+}
 
 int execute(string* source, Interpreter *interpreter = nullptr)
 {
@@ -37,13 +39,13 @@ int execute(string* source, Interpreter *interpreter = nullptr)
     } catch (vector<RPPException> exceptions)
     {
         for (RPPException exception : exceptions)
-            Hebrew::print(exception.what(), true);
+            print(exception.what());
 
         if (!eval)
             return 1;
     } catch (RPPException exception)
     {
-        Hebrew::print(exception.what(), true);
+        print(exception.what());
 
         if (!eval)
             return 1;
@@ -58,7 +60,7 @@ int execute(string* source, Interpreter *interpreter = nullptr)
     return 0;
 }
 
-int main(int argC, char** argV)
+int _main(int argC, char** argV)
 {
     string* source = new string();
     int returnValue;
@@ -66,16 +68,16 @@ int main(int argC, char** argV)
 
     if (argC == 2 && (string(argV[1]) == "-v" || string(argV[1]) == "--version"))
     {
-        Hebrew::print("rpp version " + version);
+        print("rpp version " + version);
         return 0;
     }
     if (argC == 2 && (string(argV[1]) == "-i" || string(argV[1]) == "--interactive"))
     {
-        Hebrew::print("Welcome to interactive rpp (" + version + ")!", true);
+        print("Welcome to interactive rpp (" + version + ")!");
         Interpreter* interpreter = new Interpreter();
         while (true)
         {
-            Hebrew::print(">");
+            print(">");
             getline(cin, *source);
             returnValue = execute(source, interpreter);
             if (returnValue != 0)
@@ -87,7 +89,7 @@ int main(int argC, char** argV)
         ifstream file(argV[1]);
         if (!file.is_open())
         {
-            Hebrew::print("could not open '" + string(argV[1]) + "'", true);
+            print("could not open '" + string(argV[1]) + "'");
             return 2;
         }
 
@@ -99,7 +101,7 @@ int main(int argC, char** argV)
             string::iterator invalid = utf8::find_invalid(line.begin(), line.end());
             if (invalid != line.end())
             {
-                Hebrew::print("invalid UTF-8 at line " + to_string(lineCount), true);
+                print("invalid UTF-8 at line " + to_string(lineCount));
                 return 2;
             }
             lineCount++;
@@ -115,6 +117,13 @@ int main(int argC, char** argV)
         return execute(source);
     }
 
-    Hebrew::print("usage:\n\trpp [path] [-v] [--version] [-c code] [-i] [--interactive]", true);
+    print("usage:\n\trpp [path] [-v] [--version] [-c code] [-i] [--interactive]");
     return 1;
+}
+
+int main(int argC, char** argV) {
+    int ret = _main(argC, argV);
+    #ifdef ComplexOutput
+    IO->restore();
+    #endif
 }
