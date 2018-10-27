@@ -268,7 +268,7 @@ void Interpreter::executeCommand(CommandStatement *statement) {
         case Print:
             return print(value);
         case Exit:
-            return exit((int) value->getNumber());
+            safeExit((int) value->getNumber());
         case Return:
             throw ReturnValue(statement->command, value);
         case Throw:

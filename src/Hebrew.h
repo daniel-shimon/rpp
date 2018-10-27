@@ -10,7 +10,6 @@
 #include "utf8.h"
 
 #include <vector>
-#include <map>
 #include <algorithm>
 
 #define Self "אני"
@@ -69,8 +68,8 @@ namespace Hebrew {
     }
 
     string englishify(string value);
-    void print(string value, bool endLine, bool rtl=true);
-    void print(const char* value, bool endLine, bool rtl=true);
+    void print(string value, bool endLine=true, bool rtl=true);
+    void print(const char* value, bool endLine=true, bool rtl=true);
     string read(bool rtl=true);
 };
 

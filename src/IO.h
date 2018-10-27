@@ -7,13 +7,17 @@
 
 #include "Exception.h"
 #include <iostream>
+#include <map>
 
 #define warning(msg) cout << "\n***" << msg << "***\n" << endl;
 
 #ifndef _WIN32
 #warning Bi-directional io is only supported on Windows.
+#define safeExit(c) exit(c);
 
 #else
+
+// region Defines and includes
 
 #define ComplexOutput
 #define WIN32_LEAN_AND_MEAN
@@ -26,9 +30,35 @@
 #define ENTER 13
 #define SPACE 32
 
+#define whitespaceCases \
+    case L'<': \
+    case L'>': \
+    case L'(':\
+    case L')':\
+    case L'-':\
+    case L'=':\
+    case L'~':\
+    case L'/':\
+    case L'[':\
+    case L']':\
+    case L'\'':\
+    case L'\\':\
+    case L'"':\
+    case L'!':\
+    case L'+':\
+    case L'_':\
+    case L';':\
+    case L'*':\
+    case L'$':\
+    case L'^':\
+    case L'&':\
+    case L':':
+
 #define windowsError throw RPPException("WinApi Error", "", to_string(GetLastError()));
 #define consoleError(message) throw RPPException("Console Error", "", message);
 #define encodingError(message) throw RPPException("Encoding Error", "", message);
+
+// endregion
 
 struct run {
     wstring s = L"";
@@ -38,10 +68,21 @@ struct run {
 
 class _IO {
 public:
+    bool enabled;
     CONSOLE_SCREEN_BUFFER_INFO cInfo;
     HANDLE hStdout, hStdin;
     DWORD oldMode;
-    bool enabled;
+
+    map<wchar_t, wchar_t> bidiChars = {
+            {L'(', L')'},
+            {L')', L'('},
+            {L'[', L']'},
+            {L']', L'['},
+            {L'<', L'>'},
+            {L'>', L'<'},
+            {L'{', L'}'},
+            {L'}', L'{'},
+    };
 
     _IO() {
         hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -179,6 +220,7 @@ public:
         auto runs = stack<run>();
         bool whitespace = true;
         wstring tmpStr = L"";
+        auto clearAndBack = wstring{BACKSPACE, SPACE, BACKSPACE};
 
         auto current = run();
         current.rtl = false;
@@ -192,7 +234,7 @@ public:
                     if (whitespace) {
                         if (!tmpStr.empty()) { // prevent backspace after hebrew run deletion
                             tmpStr = tmpStr.substr(0, tmpStr.length() - 1);
-                            writeWChar(BACKSPACE);
+                            writeStr(clearAndBack);
                             if (tmpStr.empty()) {
                                 whitespace = false;
                                 current.whitespace = 0;
@@ -237,17 +279,33 @@ public:
                 case ENTER:
                     if (!whitespace && current.rtl)
                         moveCursor(current.s.length() + 1);
+                    setCursor(0, cursorRow() + (short) 1);
+
+                    if (whitespace)
+                        if (current.rtl) {
+                            runs.push(current);
+                            current = run();
+                            current.s = tmpStr;
+                        } else
+                            current.s += tmpStr;
 
                     tmpStr = L"";
                     runs.push(current);
                     while (runs.size()) {
                         current = runs.top();
+                        if (current.rtl) {
+                            wstring tmp = L"";
+                            addBidi(current.s, &tmp);
+                            current.s = tmp;
+                        }
                         tmpStr = current.s + tmpStr;
                         runs.pop();
                     }
                     writeWChar(ENTER);
                     return utf16ToUtf8(tmpStr);
                 case TAB:
+                    ch = SPACE;
+                whitespaceCases
                 case SPACE:
                     if (!whitespace) {
                         tmpStr = L"";
@@ -255,22 +313,24 @@ public:
                             moveCursor(current.s.length());
                         }
                     }
-                    writeWChar(SPACE);
-                    tmpStr += SPACE;
+                    tmpStr += ch;
+                    writeWChar(ch);
                     whitespace = true;
                     break;
                 default:
                     if (whitespace) {
-                        current.s += tmpStr;
                         current.whitespace = tmpStr.length();
                         if (current.rtl) {
                             if (isHebrew(ch)) {
+                                addBidi(tmpStr, &current.s);
                                 moveCursor(-current.s.length());
                             } else {
                                 runs.push(current);
                                 current = run();
+                                current.s = tmpStr;
                             }
                         } else {
+                            current.s += tmpStr;
                             if (isHebrew(ch)) {
                                 runs.push(current);
                                 current = run();
@@ -311,7 +371,7 @@ public:
         auto clearCell = wstring{SPACE, BACKSPACE};
 
         auto current = run();
-        current.rtl = false;
+        current.rtl = true;
 
         while (wchar_t ch = getWChar()) {
             switch (ch) {
@@ -322,8 +382,8 @@ public:
                     if (whitespace) {
                         if (!tmpStr.empty()) { // prevent backspace after run deletion
                             tmpStr = tmpStr.substr(0, tmpStr.length() - 1);
-                            writeStr(clearCell);
                             moveCursorRTL(1);
+                            writeStr(clearCell);
                             if (tmpStr.empty()) {
                                 whitespace = false;
                                 current.whitespace = 0;
@@ -375,6 +435,9 @@ public:
                         moveCursorRTL(-current.s.length());
                     setCursor(0, cursorRow() + (short) 1);
 
+                    if (whitespace)
+                        current.s += tmpStr;
+
                     tmpStr = L"";
                     runs.push(current);
                     while (runs.size()) {
@@ -384,18 +447,22 @@ public:
                     }
                     return utf16ToUtf8(tmpStr);
                 case TAB:
-                case SPACE: {
-                    int offset = -1;
+                    ch = SPACE;
+                whitespaceCases
+                case SPACE:
                     if (!whitespace) {
                         tmpStr = L"";
                         if (!current.rtl)
-                            offset -= current.s.length();
+                            moveCursorRTL(-current.s.length());
                     }
-                    moveCursorRTL(offset);
-                    tmpStr += SPACE;
+                    tmpStr += ch;
+                    if (bidiChars.count(ch))
+                        ch = bidiChars.at(ch);
+                    if (ch != SPACE)
+                        writeStr(wstring{ch, BACKSPACE});
+                    moveCursorRTL(-1);
                     whitespace = true;
                     break;
-                }
                 default:
                     if (whitespace) {
                         current.s += tmpStr;
@@ -464,6 +531,7 @@ public:
             switch (ch) {
                 case ENTER:
                 case TAB:
+                whitespaceCases
                 case SPACE:
                     whitespace = true;
                     tmpStr += ch;
@@ -478,7 +546,7 @@ public:
                                 *current = tmpStr;
                                 rtl = false;
                             } else
-                                *current += tmpStr;
+                                addBidi(tmpStr, current);
                         } else {
                             *current += tmpStr;
                             if (isHebrew(ch)) {
@@ -495,8 +563,17 @@ public:
             }
         }
 
-        if (whitespace)
-            *current += tmpStr;
+        if (whitespace) {
+            if (rtl) {
+                wstring tmp;
+                reverse(*current, tmp);
+                runs.push(new wstring(tmp));
+                *current = tmpStr;
+                rtl = false;
+            } else
+                *current += tmpStr;
+        }
+
         if (rtl) {
             reverse(*current, tmpStr);
             delete current;
@@ -512,7 +589,7 @@ public:
             runs.pop();
         }
         if (endLine)
-            tmpStr += wstring{ENTER};
+            tmpStr += L"\n";
         writeStr(tmpStr);
     }
 
@@ -529,6 +606,7 @@ public:
             switch (ch) {
                 case ENTER:
                 case TAB:
+                whitespaceCases
                 case SPACE:
                     whitespace = true;
                     tmpStr += ch;
@@ -536,7 +614,8 @@ public:
                 default:
                     if (whitespace) {
                         if (rtl) {
-                            *current += tmpStr;
+                            addBidi(tmpStr, current);
+
                             if (!isHebrew(ch)) {
                                 reverse(*current, tmpStr);
                                 runs.push(new wstring(tmpStr));
@@ -546,7 +625,8 @@ public:
                         } else {
                             if (isHebrew(ch)) {
                                 runs.push(current);
-                                current = new wstring(tmpStr);
+                                current = new wstring();
+                                addBidi(tmpStr, current);
                                 rtl = true;
                             } else
                                 *current += tmpStr;
@@ -560,7 +640,15 @@ public:
         }
 
         if (whitespace)
-            *current += tmpStr;
+            if (rtl)
+                addBidi(tmpStr, current);
+            else {
+                runs.push(current);
+                current = new wstring();
+                addBidi(tmpStr, current);
+                rtl = true;
+            }
+
         if (rtl) {
             reverse(*current, tmpStr);
             delete current;
@@ -608,6 +696,14 @@ public:
             moveCursorRTL(-1);
     }
 
+    void addBidi(const wstring &from, wstring *to) const {
+        for (auto _ch : from)
+            if (bidiChars.count(_ch))
+                *to += bidiChars.at(_ch);
+            else
+                *to += _ch;
+    }
+
     inline void rightAlign() {
         setCursor(cInfo.dwSize.X - (short) 1, cursorRow());
     }
@@ -619,11 +715,10 @@ public:
 
 extern _IO *IO;
 
-#define exit(c) \
+#define safeExit(c) \
     IO->restore();  \
     exit(c);
 
 #endif
-
 
 #endif //RPP_IO_H

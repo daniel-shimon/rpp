@@ -62,7 +62,6 @@ int execute(string* source, Interpreter *interpreter = nullptr)
 
 int _main(int argC, char** argV)
 {
-    string* source = new string();
     int returnValue;
     RPP::init();
 
@@ -77,9 +76,9 @@ int _main(int argC, char** argV)
         Interpreter* interpreter = new Interpreter();
         while (true)
         {
-            print(">");
-            getline(cin, *source);
-            returnValue = execute(source, interpreter);
+            Hebrew::print(">", false);
+            auto source = Hebrew::read();;
+            returnValue = execute(&source, interpreter);
             if (returnValue != 0)
                 return returnValue;
         }
@@ -101,20 +100,18 @@ int _main(int argC, char** argV)
             string::iterator invalid = utf8::find_invalid(line.begin(), line.end());
             if (invalid != line.end())
             {
-                print("invalid UTF-8 at line " + to_string(lineCount));
+                print(RPPException("Encoding Error", "", "Invalid UTF8").what());
                 return 2;
             }
             lineCount++;
             buff += line + "\n";
         }
-        source = new string(buff);
 
-        return execute(source);
+        return execute(new string(buff));
     }
     if (argC == 3 && string(argV[1]) == "-c")
     {
-        source = new string(argV[2]);
-        return execute(source);
+        return execute(new string(argV[2]));
     }
 
     print("usage:\n\trpp [path] [-v] [--version] [-c code] [-i] [--interactive]");
@@ -126,4 +123,5 @@ int main(int argC, char** argV) {
     #ifdef ComplexOutput
     IO->restore();
     #endif
+    return ret;
 }
