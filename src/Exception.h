@@ -23,7 +23,7 @@ public:
     {
         if (message.empty())
             return (new string(type + " " + signature))->c_str();
-        return (new string(type + " " + signature + ": " + message))->c_str();
+        return (new string(type + " " + signature + " : " + message))->c_str();
     };
 };
 

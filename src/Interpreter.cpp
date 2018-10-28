@@ -29,6 +29,7 @@ Value *Interpreter::evaluateLiteral(LiteralExpression *literal) {
     }
 
     runtimeError(literal->token, "unsupported literal");
+    return nullptr;
 }
 
 Value *Interpreter::evaluateGrouping(GroupingExpression *grouping) {
@@ -47,6 +48,7 @@ Value *Interpreter::evaluateUnary(UnaryExpression *unary) {
     }
 
     runtimeError(unary->op);
+    return nullptr;
 }
 
 Value *Interpreter::evaluateBinary(BinaryExpression *binary) {
@@ -112,6 +114,7 @@ Value *Interpreter::evaluateBinary(BinaryExpression *binary) {
     }
 
     runtimeError(binary->op);
+    return nullptr;
 }
 
 Value *Interpreter::evaluateVariable(VariableExpression *variable) {
@@ -148,6 +151,7 @@ Value *Interpreter::evaluateCall(CallExpression *call) {
     }
 
     runtimeError(token, callee->toString() + " is not a function nor class");
+    return nullptr;
 }
 
 Value *Interpreter::evaluateFunction(FunctionExpression *function) {
@@ -173,7 +177,7 @@ Value *Interpreter::evaluateClass(ClassExpression *klass) {
         } else
             staticAttributes[name] = value;
     }
-    return new Value(new ClassValue(staticAttributes, methods, initArity));
+    return new Value(new ClassValue("", initArity, staticAttributes, methods));
 }
 
 Value *Interpreter::evaluateGet(GetExpression *get) {
@@ -540,6 +544,7 @@ Value *Environment::get(string name) {
         return variables[name];
     if (enclosing)
         return enclosing->get(name);
+    return nullptr;
 }
 
 Environment *Environment::getEnclosing() {
@@ -591,7 +596,7 @@ InstanceValue *Value::getInstance() {
 string Value::toString(Interpreter *interpreter) {
     switch (type) {
         case NoneType:
-            return "none";
+            return "ריק";
         case Number: {
             double value = getNumber();
             string number;
@@ -603,18 +608,18 @@ string Value::toString(Interpreter *interpreter) {
 
             if (interpreter)
                 return number;
-            return "<number " + number + ">";
+            return "<מספר " + number + ">";
         }
         case Bool:
             if (interpreter) {
                 if (getBool())
-                    return "true";
-                return "false";
+                    return "אמת";
+                return "שקר";
             }
-            return "<bool>";
+            return "<בוליאני>";
         case Function: {
             int arity = getFunction()->arity;
-            string str = "<function";
+            string str = "<פעולה";
             if (!getFunction()->name.empty())
                 str += " '" + getFunction()->name + "'";
             str += ">(";
@@ -622,12 +627,12 @@ string Value::toString(Interpreter *interpreter) {
             if (arity == -1)
                 return str + "...)";
             if (arity == 1)
-                return str + "1 argument)";
+                return str + "פרמטר אחד)";
 
-            return str + to_string(arity) + " arguments)";
+            return str + to_string(arity) + " פרמטרים)";
         }
         case Class: {
-            string str = "<class";
+            string str = "<מחלקה";
             if (!getClass()->name.empty())
                 str += " '" + getClass()->name + "'";
             str += '>';
@@ -645,10 +650,12 @@ string Value::toString(Interpreter *interpreter) {
             string str = "<";
             if (!getInstance()->klass->name.empty())
                 str += "'" + getInstance()->klass->name + "' ";
-            str += "instance>";
+            str += "מופע>";
 
             return str;
         }
+        default:
+            return nullptr;
     }
 }
 

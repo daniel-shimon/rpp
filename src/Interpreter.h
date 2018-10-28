@@ -57,6 +57,7 @@ public:
 
     Value(ValueType type, void* value): type(type), value(value) {};
     Value(bool value): type(Bool), value((void*)value) {};
+    Value(int value): type(Number), value(new double(value)) {};
     Value(double value): type(Number), value(new double(value)) {};
     Value(double* value): type(Number), value(value) {};
     Value(FunctionValue* value): type(Function), value(value) {};
@@ -87,7 +88,7 @@ public:
     int initArity;
     map<string, Value*> staticAttributes, methods;
 
-    ClassValue(map<string, Value*> staticAttributes, map<string, Value*> methods, int initArity, string name = "") :
+    ClassValue(string name, int initArity, map<string, Value*> staticAttributes, map<string, Value*> methods) :
             staticAttributes(staticAttributes), methods(methods), initArity(initArity), name(name) {};
 };
 class InstanceValue
@@ -189,9 +190,10 @@ public:
 
     Value *createInstance(Value *callee, Token *token, const vector<Value *> &arguments);
     inline Value *createInstance(Value *callee, const vector<Value *> &arguments)
-        {createInstance(callee, currentToken, arguments);};
+        {return createInstance(callee, currentToken, arguments);};
     Value *createString(Token *token, string *name);
-    inline Value *createString(string name) {createString(currentToken, new string(name));};
+    inline Value *createString(string name)
+        {return createString(currentToken, new string(name));};
     void runtimeError(string message = "unsupported operator");
     void nameError(Token* token, string name);
     void attributeError(Token* token, string callee, string name);

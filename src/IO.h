@@ -51,8 +51,7 @@
     case L'*':\
     case L'$':\
     case L'^':\
-    case L'&':\
-    case L':':
+    case L'&':
 
 #define windowsError throw RPPException("WinApi Error", "", to_string(GetLastError()));
 #define consoleError(message) throw RPPException("Console Error", "", message);

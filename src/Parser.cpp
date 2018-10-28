@@ -34,6 +34,7 @@ Expression *Parser::funktion() {
     }
 
     syntaxError("missing argument list after function declaration");
+    return nullptr;
 }
 
 Expression *Parser::klass() {
@@ -155,6 +156,7 @@ Expression* Parser::primary() {
     }
 
     syntaxError();
+    return nullptr;
 }
 
 // endregion
@@ -334,6 +336,7 @@ Statement *Parser::forStatement() {
     }
 
     syntaxError("missing identifier after 'for' statement");
+    return nullptr;
 }
 
 // endregion
