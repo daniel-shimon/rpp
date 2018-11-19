@@ -380,7 +380,7 @@ Similarly to Python, rpp has a built-in Range functionality, with two calling si
 ### Random
 
 Three random function signatures:
-1. Random real number in range [0, 1): `אקראי()`
+1. Random real number in range [0, 1): `()אקראי`
 2. Random integer in range [0, max): `אקראי(3)`
 3. Random integer in range [min, max): `אקראי(1000, 2000)`
 
