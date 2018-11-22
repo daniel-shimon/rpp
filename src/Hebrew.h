@@ -9,9 +9,6 @@
 #include "IO.h"
 #include "utf8.h"
 
-#include <vector>
-#include <algorithm>
-
 #define Self "אני"
 #define Init "__התחל__"
 #define ToString "__טקסט__"

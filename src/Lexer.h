@@ -6,6 +6,7 @@
 #ifndef RSHI_LEXER_H
 #define RSHI_LEXER_H
 
+#include "utf8.h"
 #include "Hebrew.h"
 #define TokenType _TokenType // handle winapi override
 
@@ -88,6 +89,7 @@ private:
     string::iterator end;
     unsigned int index = 1;
     unsigned int line = 1;
+    inline vector<Token*> _scan();
     void addToken(TokenType type, string lexeme, void* value = nullptr);
 
     bool isAtEnd();

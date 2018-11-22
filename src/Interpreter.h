@@ -147,7 +147,7 @@ private:
 public:
     BoundFunction(Value* self, FunctionValue* function, string name) : self(self), function(function) {
         this->arity = function->arity;
-        this->name = "bound_" + name;
+        this->name = name;
     };
     Value* call(Interpreter* interpreter, vector<Value*> arguments);
 };

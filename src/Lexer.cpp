@@ -12,6 +12,14 @@ Lexer::Lexer(string* source)
 }
 
 vector<Token*> Lexer::scan() {
+    try {
+        return _scan();
+    } catch (utf8::exception& e) {
+        invalidUTF8(Token::errorSignature(line, index - 1))
+    }
+}
+
+inline vector<Token*> Lexer::_scan() {
     while (iterator < end)
     {
         uint32_t ch = next();
@@ -194,8 +202,8 @@ string Token::errorSignature() {
 
 string Token::errorSignature(int line, int index, string lexeme) {
     if (lexeme.size() > 0)
-        return "at line " + to_string(line) + " index " + to_string(index) + " ('" + lexeme + "')";
-    return "at line " + to_string(line) + " index " + to_string(index);
+        return "line " + to_string(line) + " index " + to_string(index) + " ('" + lexeme + "')";
+    return "line " + to_string(line) + " index " + to_string(index);
 }
 
 bool Lexer::isAlpha(uint32_t ch) {

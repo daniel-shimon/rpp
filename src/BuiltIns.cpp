@@ -277,8 +277,6 @@ void RPP::init() {
                   auto i = *(int *) getSelf(interpreter)->nativeAttributes["i"];
                   auto max = *(int *) getSelf(interpreter)->nativeAttributes["max"];
                   if (i >= max) {
-                      delete &i;
-                      delete &max;
                       throw interpreter->createInstance(interpreter->globals[StopException], vector<Value *>());
                   }
                   *(int *) getSelf(interpreter)->nativeAttributes["i"] += 1;

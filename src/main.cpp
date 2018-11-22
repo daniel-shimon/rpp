@@ -36,22 +36,16 @@ int execute(string* source, Interpreter *interpreter = nullptr)
 
         delete lexer;
         delete parser;
-    } catch (vector<RPPException> exceptions)
+    } catch (vector<RPPException>& exceptions)
     {
         for (RPPException exception : exceptions)
             print(exception.what());
 
         if (!eval)
             return 1;
-    } catch (RPPException exception)
+    } catch (RPPException& exception)
     {
         print(exception.what());
-
-        if (!eval)
-            return 1;
-    } catch (utf8::invalid_utf8 exception)
-    {
-        Hebrew::print(exception.what(), true);
 
         if (!eval)
             return 1;
@@ -60,10 +54,17 @@ int execute(string* source, Interpreter *interpreter = nullptr)
     return 0;
 }
 
-int _main(int argC, char** argV)
+int _main(int argC, char** _argV)
 {
     int returnValue;
     RPP::init();
+
+    #ifdef ComplexOutput
+    IOInit();
+    auto argV = IO->cmdArguments(argC, _argV);
+    #else
+    #define argV _argV
+    #endif
 
     if (argC == 2 && (string(argV[1]) == "-v" || string(argV[1]) == "--version"))
     {
@@ -77,7 +78,7 @@ int _main(int argC, char** argV)
         while (true)
         {
             Hebrew::print(">", false);
-            auto source = Hebrew::read();;
+            auto source = Hebrew::read();
             returnValue = execute(&source, interpreter);
             if (returnValue != 0)
                 return returnValue;
@@ -97,12 +98,6 @@ int _main(int argC, char** argV)
         unsigned int lineCount = 1;
         while (getline(file, line))
         {
-            string::iterator invalid = utf8::find_invalid(line.begin(), line.end());
-            if (invalid != line.end())
-            {
-                print(RPPException("Encoding Error", "", "Invalid UTF8").what());
-                return 2;
-            }
             lineCount++;
             buff += line + "\n";
         }
@@ -114,14 +109,21 @@ int _main(int argC, char** argV)
         return execute(new string(argV[2]));
     }
 
-    print("usage:\n\trpp [path] [-v] [--version] [-c code] [-i] [--interactive]");
+    print("usage:\n\r\trpp [path] [-v] [--version] [-c code] [-i] [--interactive]");
     return 1;
 }
 
 int main(int argC, char** argV) {
-    int ret = _main(argC, argV);
-    #ifdef ComplexOutput
-    IO->restore();
-    #endif
-    return ret;
+    try {
+        int ret = _main(argC, argV);
+        safeExit(ret);
+    } catch (exception& e) {
+        warning(e.what())
+    }
+    try {
+        safeExit(-1);
+    } catch (exception& e) {
+        warning(e.what())
+    }
+    return -2;
 }

@@ -349,7 +349,11 @@ Similarly to Python, rpp has a built-in Range functionality, with two calling si
 - Printing to console: the `פלוט` command.
 - Receiving input from the user: the `(פלט)קלוט` function
 
-Currently, rpp translates hebrew output to english letters to cope with rtl and hebrew in the windows console :sweat:
+Currently, Rashi Plus Plus supports hebrew I/O in the console!
+
+![Hebrew Console I/O](resources/console_io.gif)
+
+(To enable hebrew in the windows console, please enable a TrueType font such as "Courier New")
 
 <pre dir="rtl" align="right">
 פלוט 'שלום'

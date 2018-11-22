@@ -482,8 +482,9 @@ void Interpreter::print(Value *value, bool printNone, bool printEndLine) {
         default:
             if (value->isString())
                 Hebrew::print(value->getString(), printEndLine);
-            else
+            else {
                 Hebrew::print(value->toString(this), printEndLine);
+            }
     }
 }
 
@@ -620,6 +621,8 @@ string Value::toString(Interpreter *interpreter) {
         case Function: {
             int arity = getFunction()->arity;
             string str = "<פעולה";
+            if (dynamic_cast<BoundFunction*>(getFunction()))
+                str += " משוייכת";
             if (!getFunction()->name.empty())
                 str += " '" + getFunction()->name + "'";
             str += ">(";
@@ -628,7 +631,6 @@ string Value::toString(Interpreter *interpreter) {
                 return str + "...)";
             if (arity == 1)
                 return str + "פרמטר אחד)";
-
             return str + to_string(arity) + " פרמטרים)";
         }
         case Class: {
@@ -647,10 +649,10 @@ string Value::toString(Interpreter *interpreter) {
                 return str;
             }
 
-            string str = "<";
+            string str = "<מופע";
             if (!getInstance()->klass->name.empty())
-                str += "'" + getInstance()->klass->name + "' ";
-            str += "מופע>";
+                str += " '" + getInstance()->klass->name + "'";
+            str += ">";
 
             return str;
         }
