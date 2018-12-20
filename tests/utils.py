@@ -5,14 +5,15 @@ from importlib import import_module
 from os import chdir, name
 from os.path import abspath, dirname, join
 from subprocess import Popen, PIPE
-from typing import List, Union
+from typing import List, Union, Callable
 
 if name == 'nt':
     rpp = r'cmake-build-debug\rpp.exe'
 else:
     rpp = '/build/rpp'
 
-BenchResult = namedtuple('BenchResult', ['time', 'instructions', 'cache_misses', 'branch_misses'])
+bench_metrics = ['time', 'instructions', 'cycles', 'cache_misses', 'branch_misses']
+BenchResult = namedtuple('BenchResult', bench_metrics)
 chdir(dirname(dirname(abspath(__file__))))
 
 
@@ -39,7 +40,7 @@ class Test:
 
     def bench(self, reps) -> BenchResult:
         self.code = self.code.replace('"', "'")
-        p = Popen(list('perf stat -e instructions:u -e cache-misses:u -e branch-misses:u -r'.split()) +
+        p = Popen(list('perf stat -e instructions:u -e cycles:u -e cache-misses:u -e branch-misses:u -r'.split()) +
                   [str(reps), rpp] + (['-c'] if not self.is_path else []) + [self.code],
                   stdin=PIPE, stdout=PIPE, stderr=PIPE, universal_newlines=True)
         _, out = p.communicate(self.input * reps, self.timeout * reps)
@@ -47,7 +48,12 @@ class Test:
 
         def value(i): return lines[-i].strip().split()[0]
 
-        return BenchResult(float(value(3)), int(value(7)), int(value(6)), int(value(5)))
+        try:
+            return BenchResult(float(value(3)), int(value(8)), int(value(7)), int(value(6)), int(value(5)))
+        except (ValueError, IndexError) as e:
+            print('bad perf stat output:')
+            print('\n'.join(lines[-10:]))
+            raise e
 
 
 def run(code, inputs, timeout, is_path):

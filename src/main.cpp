@@ -8,7 +8,7 @@
 
 #include <fstream>
 
-string version = "0.1";
+string version = "0.2";
 
 void print(string s) {
     Hebrew::print(s, true, false);

@@ -202,8 +202,6 @@ string __IO::complexInputRTL() {
      *  ltr run - cursor is at right side of run (hello$ יאללה מגניב).
      *  ltr run and whitespace - whitespace at left end of run ($   hello שלום וגם).
      */
-//    writeIOStr(IO_STR_LTR_("hello?\b\b \b"));
-    writeIOStr(IO_STR_LTR_("'ךףכשךדלגגחשדכשףש"));
 
     auto runs = stack<run>();
     bool whitespace = true;

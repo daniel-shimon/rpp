@@ -1,5 +1,8 @@
-# RPP
-Rashi Plus Plus - the new Hebrew scripting language
+# Rashi Plus Plus (RPP) - The New Hebrew Scripting Language
+[![Release version](https://img.shields.io/github/release/daniel-shimon/rpp.svg)](https://github.com/daniel-shimon/rpp/releases/)
+![Code size](https://img.shields.io/github/languages/code-size/daniel-shimon/rpp.svg)
+![Stars](https://img.shields.io/github/stars/daniel-shimon/rpp.svg)
+![License](https://img.shields.io/github/license/daniel-shimon/rpp.svg)
 
 Interpreted, untyped, object-oriented and super cool.
 
@@ -40,10 +43,10 @@ Interpreted, untyped, object-oriented and super cool.
 
 ### Windows
 
-A precompiled version for Win32 is available in the [release](https://github.com/daniel-shimon/rpp/releases/) section
+A precompiled version for Windows x64 is available in the [release](https://github.com/daniel-shimon/rpp/releases/) section
 
-```cmd
- g++ -std=c++11 -static src/*.h src/*.cpp -o rpp.exe
+```bash
+g++ -std=c++17 -static src/*.h src/*.cpp -o rpp.exe
 ```
 
 <a name="install-linux"/>
@@ -53,7 +56,7 @@ A precompiled version for Win32 is available in the [release](https://github.com
 As simple as they get :smile:
 
 ```bash
-g++ -std=c++11 src/*.h src/*.cpp -o rpp
+g++ -std=c++17 src/*.h src/*.cpp -o rpp
 ```
 
 <a name="vars"/>

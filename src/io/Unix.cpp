@@ -4,7 +4,8 @@
 
 #ifndef Windows
 
-void BaseIO::restore() {
+void
+BaseIO::restore() {
     tcsetattr(STDIN_FILENO, TCSANOW, &oldTerm);
 }
 
