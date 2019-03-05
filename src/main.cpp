@@ -6,6 +6,7 @@
 #include "Interpreter.h"
 #include "BuiltIns.h"
 
+#include <cstring>
 #include <fstream>
 
 #define version "0.2"
@@ -66,12 +67,12 @@ int _main(int argC, char** _argV)
     #define argV _argV
     #endif
 
-    if (argC == 2 && (string(argV[1]) == "-v" || string(argV[1]) == "--version"))
+    if (argC == 2 && (argV[1] == "-v" || argV[1] == "--version"))
     {
         print("rpp version " version);
         return 0;
     }
-    if (argC == 2 && (string(argV[1]) == "-i" || string(argV[1]) == "--interactive"))
+    if (argC == 2 && (argV[1] == "-i" || argV[1] == "--interactive"))
     {
         print("Welcome to interactive rpp (" version ")!");
         Interpreter* interpreter = new Interpreter();
@@ -104,7 +105,7 @@ int _main(int argC, char** _argV)
 
         return execute(new string(buff));
     }
-    if (argC == 3 && string(argV[1]) == "-c")
+    if (argC == 3 && argV[1] == "-c")
     {
         return execute(new string(argV[2]));
     }
@@ -117,12 +118,12 @@ int main(int argC, char** argV) {
     try {
         int ret = _main(argC, argV);
         safeExit(ret);
-    } catch (exception& e) {
+    } catch (const exception& e) {
         warning(e.what())
     }
     try {
         safeExit(-1);
-    } catch (exception& e) {
+    } catch (const exception& e) {
         warning(e.what())
     }
     return -2;
