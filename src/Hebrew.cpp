@@ -20,7 +20,7 @@ string Hebrew::englishify(string value) {
     return output;
 }
 
-void Hebrew::print(string value, bool endLine, bool rtl) {
+void Hebrew::print(const string& value, bool endLine, bool rtl) {
 #ifdef ComplexOutput
     if (IO->enabled) {
         if (rtl) {

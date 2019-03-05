@@ -8,9 +8,9 @@
 
 #include <fstream>
 
-string version = "0.2";
+#define version "0.2"
 
-void print(string s) {
+void print(const string& s) {
     Hebrew::print(s, true, false);
 }
 
@@ -38,7 +38,7 @@ int execute(string* source, Interpreter *interpreter = nullptr)
         delete parser;
     } catch (vector<RPPException>& exceptions)
     {
-        for (RPPException exception : exceptions)
+        for (const RPPException& exception : exceptions)
             print(exception.what());
 
         if (!eval)
@@ -68,16 +68,16 @@ int _main(int argC, char** _argV)
 
     if (argC == 2 && (string(argV[1]) == "-v" || string(argV[1]) == "--version"))
     {
-        print("rpp version " + version);
+        print("rpp version " version);
         return 0;
     }
     if (argC == 2 && (string(argV[1]) == "-i" || string(argV[1]) == "--interactive"))
     {
-        print("Welcome to interactive rpp (" + version + ")!");
+        print("Welcome to interactive rpp (" version ")!");
         Interpreter* interpreter = new Interpreter();
         while (true)
         {
-            Hebrew::print(">", false);
+            Hebrew::print("> ", false);
             auto source = Hebrew::read();
             returnValue = execute(&source, interpreter);
             if (returnValue != 0)
@@ -93,7 +93,7 @@ int _main(int argC, char** _argV)
             return 2;
         }
 
-        string buff = "";
+        string buff;
         string line;
         unsigned int lineCount = 1;
         while (getline(file, line))

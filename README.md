@@ -46,7 +46,7 @@ Interpreted, untyped, object-oriented and super cool.
 A precompiled version for Windows x64 is available in the [release](https://github.com/daniel-shimon/rpp/releases/) section
 
 ```bash
-g++ -std=c++17 -static src/*.h src/*.cpp -o rpp.exe
+g++ -std=c++17 -O3 -static src/*.h src/*.cpp -o rpp.exe
 ```
 
 <a name="install-linux"/>
@@ -56,7 +56,7 @@ g++ -std=c++17 -static src/*.h src/*.cpp -o rpp.exe
 As simple as they get :smile:
 
 ```bash
-g++ -std=c++17 src/*.h src/*.cpp -o rpp
+g++ -std=c++17 -O3 src/*.h src/*.cpp -o rpp
 ```
 
 <a name="vars"/>
