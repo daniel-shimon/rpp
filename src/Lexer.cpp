@@ -4,14 +4,14 @@
 //
 #include "Lexer.h"
 
-Lexer::Lexer(string* source)
+Lexer::Lexer(string&& source)
 {
-    start = source->begin();
-    iterator = start;
-    end = source->end();
+    this->source = source;
+    iterator = this->source.begin();
+    end = this->source.end();
 }
 
-vector<Token*> Lexer::scan() {
+vector<shared_ptr<Token>> Lexer::scan() {
     try {
         return _scan();
     } catch (utf8::exception& e) {
@@ -19,7 +19,7 @@ vector<Token*> Lexer::scan() {
     }
 }
 
-inline vector<Token*> Lexer::_scan() {
+inline vector<shared_ptr<Token>> Lexer::_scan() {
     while (iterator < end)
     {
         uint32_t ch = next();
@@ -111,7 +111,7 @@ inline vector<Token*> Lexer::_scan() {
 }
 
 void Lexer::addToken(TokenType type, string lexeme, void* value) {
-    tokens.emplace_back(new Token(type, lexeme, value, line, index));
+    tokens.push_back(make_shared<Token>(type, lexeme, value, line, index));
 }
 
 bool Lexer::isAtEnd() {
@@ -165,7 +165,7 @@ void Lexer::scanString(char delimiter) {
 
 void Lexer::scanNumber() {
     string::iterator start = iterator;
-    utf8::prior(start, this->start);
+    utf8::prior(start, this->source.begin());
 
     while (isDigit(peek()))
         next();
@@ -183,7 +183,7 @@ void Lexer::scanNumber() {
 
 void Lexer::scanIdentifier() {
     string::iterator start = iterator;
-    utf8::prior(start, this->start);
+    utf8::prior(start, this->source.begin());
 
     while (isAlpha(peek()) || isDigit(peek()) || peek() == '_')
         next();
@@ -194,6 +194,19 @@ void Lexer::scanIdentifier() {
         addToken(reserved.at(value), value);
     else
         addToken(Identifier, value, new string(value));
+}
+
+Token::~Token() {
+    switch (this->type) {
+        case NumberLiteral:
+            delete (double*)this->value;
+            break;
+        case StringLiteral:
+        case Identifier:
+            delete (string*)this->value;
+        default:
+            return;
+    }
 }
 
 string Token::errorSignature() {

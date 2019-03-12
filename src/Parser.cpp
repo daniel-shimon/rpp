@@ -18,7 +18,7 @@ Expression* Parser::expression() {
 Expression *Parser::funktion() {
     if (match(OpenParen))
     {
-        Token* token = next();
+        auto token = next();
         vector<Token*> arguments;
 
         if (match(Identifier))
@@ -38,7 +38,7 @@ Expression *Parser::funktion() {
 }
 
 Expression *Parser::klass() {
-    Token* token = peek();
+    shared_ptr<Token> token = currentToken();
     Statement* declaration = actionStatement(true);
     vector<Statement*> statements;
     BlockStatement* block = dynamic_cast<BlockStatement*>(declaration);
@@ -84,7 +84,7 @@ Expression* Parser::power() {
 Expression* Parser::unary() {
     if (peekMatch({Not, Minus}))
     {
-        Token* op = next();
+        auto op = next();
         Expression* expression = unary();
         return new UnaryExpression(op, expression);
     }
@@ -99,7 +99,7 @@ Expression *Parser::call() {
     {
         if (match(OpenParen) || match(OpenSquare))
         {
-            Token* token = next();
+            auto token = next();
             vector<Expression*> arguments;
 
             if (!match(CloseParen) && !match(CloseSquare))
@@ -222,7 +222,7 @@ Statement *Parser::tryStatement() {
 
         if (nextMatch(As) && match(Identifier))
         {
-            Token* identifier = next();
+            auto identifier = next();
             Statement* catchAction = actionStatement();
             catches.push_back(pair<Token*, Statement*>(identifier, catchAction));
         } else
@@ -273,7 +273,7 @@ Statement *Parser::assignStatement() {
 }
 
 Statement *Parser::commandStatement(bool allowValue) {
-    Token* command = next();
+    auto command = next();
     Expression* value = nullptr;
     if (allowValue)
         value = expression();
@@ -307,14 +307,14 @@ Statement *Parser::actionStatement(bool enableEmpty) {
 }
 
 Statement *Parser::defStatement() {
-    Token* name = next();
+    auto name = next();
     Expression* value = funktion();
 
     return new AssignStatement(name, value);
 }
 
 Statement *Parser::classStatement() {
-    Token* name = next();
+    auto name = next();
     Expression* value = klass();
 
     return new AssignStatement(name, value);
@@ -323,7 +323,7 @@ Statement *Parser::classStatement() {
 Statement *Parser::forStatement() {
     if (match(Identifier))
     {
-        Token* name = next();
+        auto name = next();
 
         if (nextMatch(In))
         {
@@ -343,14 +343,19 @@ Statement *Parser::forStatement() {
 
 // region utils
 
-Token* Parser::next() {
-    Token* token = tokens[current];
-    current++;
-    return token;
+// ownership *transfer* from vector
+shared_ptr<Token> Parser::next() {
+    return move(tokens[current++]);
 }
 
+// no ownership changes
 Token* Parser::peek() {
-    return tokens[current];
+    return tokens[current].get();
+}
+
+// ownership *transfer* from vector
+shared_ptr<Token> Parser::currentToken() {
+    return move(tokens[current]);
 }
 
 bool Parser::isAtEnd() {
@@ -391,7 +396,7 @@ Expression* Parser::parseBinary(function<Expression*()> parseFunction, initializ
 
     while(peekMatch(typesList))
     {
-        Token* op = next();
+        auto op = next();
         Expression* second = parseFunction();
         expression = new BinaryExpression(expression, op, second);
     }

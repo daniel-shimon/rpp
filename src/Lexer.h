@@ -8,6 +8,8 @@
 
 #include "utf8.h"
 #include "Hebrew.h"
+
+#include <memory>
 #define TokenType _TokenType // handle winapi override
 
 enum TokenType
@@ -40,6 +42,7 @@ public:
 
     Token(TokenType type, string lexeme, void* value, unsigned int line, unsigned int index) :
             lexeme(std::move(lexeme)), type(type), value(value), line(line), index(index) {}
+    ~Token();
     string errorSignature();
     static string errorSignature(int line, int index, string lexeme = "");
 };
@@ -83,13 +86,13 @@ const map<string, TokenType> reserved = {
 
 class Lexer {
 private:
-    vector<Token*> tokens;
-    string::iterator start;
+    vector<shared_ptr<Token>> tokens;
+    string source;
     string::iterator iterator;
     string::iterator end;
     unsigned int index = 1;
     unsigned int line = 1;
-    inline vector<Token*> _scan();
+    inline vector<shared_ptr<Token>> _scan();
     void addToken(TokenType type, string lexeme, void* value = nullptr);
 
     bool isAtEnd();
@@ -105,8 +108,8 @@ private:
     void scanIdentifier();
 
 public:
-    explicit Lexer(string* source);
-    vector<Token*> scan();
+    explicit Lexer(string&& source);
+    vector<shared_ptr<Token>> scan();
 };
 
 

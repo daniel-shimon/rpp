@@ -28,10 +28,10 @@ class BinaryExpression: public Expression
 {
 public:
     Expression* first;
-    Token* op;
+    shared_ptr<Token> op;
     Expression* second;
 
-    BinaryExpression(Expression* first, Token* op, Expression* second) : first(first), op(op), second(second) {};
+    BinaryExpression(Expression* first, shared_ptr<Token>&& op, Expression* second) : first(first), op(op), second(second) {};
     Value* accept(ExpressionVisitor* visitor);
 };
 class UnaryExpression: public Expression
@@ -93,11 +93,11 @@ public:
 class ClassExpression: public Expression
 {
 public:
-    Token* token;
+    shared_ptr<Token> token;
     vector<AssignStatement*> actions;
 
-    ClassExpression(Token* token, vector<AssignStatement*> actions) :
-            token(token), actions(actions) {};
+    ClassExpression(shared_ptr<Token> token, vector<AssignStatement*> actions) :
+            token(move(token)), actions(actions) {};
     Value* accept(ExpressionVisitor* visitor);
 };
 class GetExpression: public Expression
@@ -247,7 +247,7 @@ public:
 class Parser
 {
 private:
-    vector<Token*> tokens;
+    vector<shared_ptr<Token>> tokens;
     int current = 0;
     int indent = 0;
 
@@ -275,8 +275,9 @@ private:
     Statement* defStatement();
     Statement* classStatement();
 
-    Token* next();
+    shared_ptr<Token> next();
     Token* peek();
+    shared_ptr<Token> currentToken();
     bool nextMatch(TokenType type);
     bool isAtEnd();
     bool match(TokenType type, int offset = 0);
@@ -288,8 +289,8 @@ private:
 
     Expression* parseBinary(function<Expression*()> parseFunction, initializer_list<TokenType> typesList);
 public:
-    Parser(vector<Token*> tokens): tokens(tokens) {};
-    vector<Statement*> parse();
+    explicit Parser(vector<shared_ptr<Token>>&& tokens): tokens(move(tokens)) {};
+    vector<Statement> parse();
 };
 
 
