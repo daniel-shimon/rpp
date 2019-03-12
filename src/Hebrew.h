@@ -64,7 +64,7 @@ namespace Hebrew {
         map<uint32_t, string> charMap = createCharMap();
     }
 
-    string englishify(string value);
+    string englishify(const string& value);
     void print(const string& value, bool endLine=true, bool rtl=true);
     void print(const char* value, bool endLine=true, bool rtl=true);
     string read(bool rtl=true);
