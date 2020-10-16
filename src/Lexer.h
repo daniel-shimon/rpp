@@ -53,7 +53,7 @@ const map<string, TokenType> reserved = {
         {"וגם", And},
         {"או", Or},
         {"פעולה", Def},
-        {"פלוט", Print},
+        {"הדפס", Print},
         {"צא", Exit},
         {"החזר", Return},
         {"אם", If},

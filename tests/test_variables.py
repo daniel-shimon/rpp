@@ -5,16 +5,16 @@ code = '''
 פעולה א(מ):
     ''' + '\n\t'.join(f'{c} = {i}' for i, c in enumerate(ascii_letters)) + '''
     גיל = 7
-    פלוט גיל
+    הדפס גיל
     כ = 0
     ''' + '\n\t'.join(f'כ = כ + {c}' for c in ascii_letters) + '''
     החזר מ כפול כ
 
 גיל = 10
-פלוט א(גיל)
-פלוט א(-1)
-פלוט גיל
-פלוט a
+הדפס א(גיל)
+הדפס א(-1)
+הדפס גיל
+הדפס a
 '''
 
 s = sum(range(len(ascii_letters)))
