@@ -2,7 +2,7 @@ from collections import namedtuple
 from dataclasses import dataclass
 from glob import glob
 from importlib import import_module
-from os import chdir, name
+from os import name
 from os.path import abspath, dirname, join
 from subprocess import Popen, PIPE
 from typing import List, Union, Callable
@@ -10,11 +10,10 @@ from typing import List, Union, Callable
 if name == 'nt':
     rpp = r'cmake-build-debug\rpp.exe'
 else:
-    rpp = '/build/rpp'
+    rpp = './rpp'
 
 bench_metrics = ['time', 'instructions', 'cycles', 'cache_misses', 'branch_misses']
 BenchResult = namedtuple('BenchResult', bench_metrics)
-chdir(dirname(dirname(abspath(__file__))))
 
 
 @dataclass
