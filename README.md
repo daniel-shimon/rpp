@@ -12,9 +12,7 @@ Interpreted, untyped, object-oriented and super cool.
 
 ## Table of Contents
 
-* [Installation](#install)
-    * [Windows](#install-win)
-    * [Linux](#install-linux)
+* [Compilation](#compile)
 * [Variables, Comparison and Math](#vars)
     * [Operators](#vars-operators)
 * [Control Flow](#flow)
@@ -35,28 +33,19 @@ Interpreted, untyped, object-oriented and super cool.
 * [Patterns](#patterns)
     * [The Iterator pattern](#patterns-iter)
 
-<a name="install"/>
+<a name="compile"/>
 
 ## Installation
 
-<a name="install-win"/>
+The project depends on cmake and gcc (MinGW64 on windows).
 
-### Windows
-
-A precompiled version for Windows x64 is available in the [release](https://github.com/daniel-shimon/rpp/releases/) section
+##### A precompiled version for Windows x64 is available in the [release](https://github.com/daniel-shimon/rpp/releases/) section.
 
 ```bash
-g++ -std=c++17 -O3 -static src/*.h src/*.cpp -o rpp.exe
-```
-
-<a name="install-linux"/>
-
-### Linux
-
-As simple as they get :smile:
-
-```bash
-g++ -std=c++17 -O3 src/*.h src/*.cpp -o rpp
+mkdir build
+cd build
+cmake ..
+make
 ```
 
 <a name="vars"/>
