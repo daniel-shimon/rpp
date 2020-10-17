@@ -2,6 +2,7 @@
 [![Release version](https://img.shields.io/github/release/daniel-shimon/rpp.svg)](https://github.com/daniel-shimon/rpp/releases/)
 ![Code size](https://img.shields.io/github/languages/code-size/daniel-shimon/rpp.svg)
 ![Stars](https://img.shields.io/github/stars/daniel-shimon/rpp.svg)
+![Build status](https://img.shields.io/github/workflow/status/daniel-shimon/rpp/CI.svg)
 ![License](https://img.shields.io/github/license/daniel-shimon/rpp.svg)
 
 Interpreted, untyped, object-oriented and super cool.
