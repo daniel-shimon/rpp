@@ -102,7 +102,8 @@ string BaseIO::readUntil(char t) {
     unsigned short i = 0;
     while (true) {
         for (i = 0; i < size; i++) {
-            read(STDIN_FILENO, buf + i, 1);
+            if (read(STDIN_FILENO, buf + i, 1) == -1)
+                unixError
             if (*(buf + i) == t) {
                 s += string(buf, i);
                 return s;
@@ -120,23 +121,29 @@ bool BaseIO::getLocation() {
     stdIn.fd = STDIN_FILENO;
     string before;
     while (poll(&stdIn, 1, 50)) {
-        read(STDIN_FILENO, &tmp, 1);
+        if (read(STDIN_FILENO, &tmp, 1) == -1)
+            unixError
         before += tmp;
     }
-    write(STDOUT_FILENO, "\033[6n", 4);
+    if (write(STDOUT_FILENO, "\033[6n", 4) == -1)
+        unixError
     if (!poll(&stdIn, 1, 50))
         return false;
-    read(STDIN_FILENO, &tmp, 1);
-    read(STDIN_FILENO, &tmp, 1);
+    if (read(STDIN_FILENO, &tmp, 1) == -1)
+        unixError
+    if (read(STDIN_FILENO, &tmp, 1) == -1)
+        unixError
     y = stoi(readUntil(';'));
     x = stoi(readUntil('R'));
-    write(STDIN_FILENO, before.c_str(), before.length());
+    if (write(STDIN_FILENO, before.c_str(), before.length()) == -1)
+        unixError
     return true;
 }
 
 void BaseIO::setLocation() {
     string cmd = "\033[" + to_string(y) + ";" + to_string(x + 1) + "H";
-    write(STDOUT_FILENO, cmd.c_str(), cmd.length());
+    if (write(STDOUT_FILENO, cmd.c_str(), cmd.length()) == -1)
+        unixError
 }
 
 #endif
