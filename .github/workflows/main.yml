@@ -1,0 +1,33 @@
+name: CI
+on: [push]
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    container: rikorose/gcc-cmake
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: rpp-src
+      - run: cmake rpp-src
+      - run: make
+      - uses: actions/upload-artifact@v2
+        with:
+          name: rpp-linux
+          path: rpp
+  test-linux:
+    needs: build-linux
+    runs-on: ubuntu-latest
+    container: python
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          path: rpp-src
+      - uses: actions/download-artifact@v2
+        with:
+          name: rpp-linux
+      - run: chmod +x rpp
+      - name: Run tests
+        env:
+          PYTHONPATH: rpp-src
+        run: python rpp-src/tests/run_tests.py

@@ -10,3 +10,4 @@ if passed:
     print('*'*20 + ' all tests passed     ' + '*'*20)
 else:
     print('*'*20 + ' not all tests passed ' + '*'*20)
+    exit(1)
