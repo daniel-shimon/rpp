@@ -210,7 +210,7 @@ Similarly to Python, rpp classes can implement "magic" methods that run in certa
 
 <pre dir="rtl" align="right">
 מחלקה סניף:
-    פעולה __התחל__(שם):
+    פעולה __אתחל__(שם):
         אני.שם = שם
         אני.עובדים = רשימה()
     
@@ -233,7 +233,7 @@ Similarly to Python, rpp classes can implement "magic" methods that run in certa
 
 | python-style | rpp |
 | :----------- | --: |
-| `__init__` | `__התחל__` |
+| `__init__` | `__אתחל__` |
 | `__str__` | `__טקסט__` |
 | `__getitem__` | `__קח__` |
 | `__setitem__` | `__שים__` |
@@ -408,7 +408,7 @@ To implement an Iterator in rpp, a class must implement the following:
 
 <pre dir="rtl" align="right">
 מחלקה קומבינציות:
-    פעולה __התחל__(רשימה_א, רשימה_ב):
+    פעולה __אתחל__(רשימה_א, רשימה_ב):
         אני.רשימה_א = רשימה_א
         אני.רשימה_ב = רשימה_ב
     פעולה __איטרטור__():
