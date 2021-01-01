@@ -10,7 +10,7 @@
 #include "utf8.h"
 
 #define Self "אני"
-#define Init "__התחל__"
+#define Init "__אתחל__"
 #define ToString "__טקסט__"
 #define GetItem "__קח__"
 #define SetItem "__שים__"
