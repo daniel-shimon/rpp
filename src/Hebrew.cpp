@@ -5,12 +5,12 @@
 
 #include "Hebrew.h"
 
-string Hebrew::englishify(string value) {
-    string output = "";
+string Hebrew::englishify(const string& value) {
+    string output;
 
-    string::iterator it = value.begin();
+    auto it = value.begin();
     while (it != value.end()) {
-        string::iterator prev = it;
+        auto prev = it;
         uint32_t ch = utf8::next(it, value.end());
         if (charMap.count(ch) == 0)
             output += string(prev, it);

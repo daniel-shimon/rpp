@@ -234,11 +234,14 @@ bool Interpreter::equalityEvaluation(Value *first, Value *second) {
 
 // region execution
 
-Value *Interpreter::execute(vector<Statement *> statements, bool evaluate) {
+
+template Value* Interpreter::execute<true>(vector<Statement*> statements);
+template Value* Interpreter::execute<false>(vector<Statement*> statements);
+template<bool evaluate> Value *Interpreter::execute(vector<Statement *> statements) {
     Value *returnValue = Value::None;
     for (Statement *statement : statements) {
         try {
-            if (evaluate)
+            if constexpr (evaluate)
                 if (ExpressionStatement *expression = dynamic_cast<ExpressionStatement *>(statement)) {
                     returnValue = executeExpression(expression);
                     break;

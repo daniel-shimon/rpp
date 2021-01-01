@@ -8,7 +8,7 @@
 Interpreted, untyped, object-oriented and super cool.
 
 <pre dir="rtl" align="right">
-פלוט 'שלום עולם!'
+הדפס 'שלום עולם!'
 </pre>
 
 ## Table of Contents
@@ -56,12 +56,12 @@ make
 <pre dir="rtl" align="right">
 מ = 10
 מ = מ / 100
-פלוט מ // 0.1
+הדפס מ // 0.1
 מ = ((מ ** 2) * 300) % 40
-פלוט מ // 3
-פלוט מ שווהל 100 או 1 == 1 // true
-פלוט מ גדולמ 70 וגם שקר // false
-פלוט לא (מ קטןמ 0.34) // true
+הדפס מ // 3
+הדפס מ שווהל 100 או 1 == 1 // true
+הדפס מ גדולמ 70 וגם שקר // false
+הדפס לא (מ קטןמ 0.34) // true
 </pre>
 
 <a name="vars-operators"/>
@@ -98,11 +98,11 @@ Any of the c-style operators can be used interchangeably with the hebrew keyword
 
 כלעוד מ קטןמ 10:
 	אם מ שווהל 2:
-		פלוט 'שתיים'
+		הדפס 'שתיים'
 	אחרת אם מ % 2 == 0:
-		פלוט 'זוגי'
+		הדפס 'זוגי'
 	אחרת:
-		פלוט 'אי-זוגי'
+		הדפס 'אי-זוגי'
 	מ = מ + 1
 
 // אי-זוגי
@@ -112,7 +112,7 @@ Any of the c-style operators can be used interchangeably with the hebrew keyword
 // ...
 
 לכל מ בתוך טווח(100):
-	פלוט מ
+	הדפס מ
 
 // 0, 1, 2, ...
 </pre>
@@ -142,12 +142,12 @@ All code blocks can be written in a one-line form or a multi-line indented block
 
 <pre dir="rtl" align="right">
 כלעוד אמת:
-    פלוט 1
+    הדפס 1
 
-כלעוד אמת פלוט 1
+כלעוד אמת הדפס 1
 
-אם שקר פלוט 1 אחרת אם אמת פלוט 2 אחרת:
-    פלוט 3
+אם שקר הדפס 1 אחרת אם אמת הדפס 2 אחרת:
+    הדפס 3
 // 2
 </pre>
 
@@ -172,10 +172,10 @@ Functions in rpp are declared similarly to JavaScript - they can be declared by 
 		החזר 1
 	החזר פיב(מ - 1) + פיב(מ - 2)
 
-פלוט_פיב = פעולה(מ) פלוט פיב(מ)
+הדפס_פיב = פעולה(מ) הדפס פיב(מ)
 
 לכל מ בתוך טווח(5):
-	פלוט_פיב(מ)
+	הדפס_פיב(מ)
 
 // 1, 1, 2, 3, 5, ...
 </pre>
@@ -191,14 +191,14 @@ Class declarations are declared similarly to functions (named or anonymous)
     פעולה כפל(א, ב):
         החזר א * ב
 
-פלוט חישובים.כפל(4, 2)
+הדפס חישובים.כפל(4, 2)
 // 8
 
 חישובים2 = מחלקה:
     פעולה ריבוע(מ):
         החזר מ ** 2
         
-פלוט חישובים2.ריבוע(3)
+הדפס חישובים2.ריבוע(3)
 // 9
 </pre>
 
@@ -226,7 +226,7 @@ Similarly to Python, rpp classes can implement "magic" methods that run in certa
 סניף_מרכזי = סניף('תל אביב')
 סניף_מרכזי.הוסף_עובד('דניאל')
 
-פלוט סניף_מרכזי
+הדפס סניף_מרכזי
 
 // תל אביב: [דניאל]
 </pre>
@@ -258,7 +258,7 @@ Exceptions are thrown and caught by class type
     ר = רשימה(1, 2)
     ר[23]
 תפוס __שגיאת_מיקום__:
-    פלוט 'שיט'
+    הדפס 'שיט'
 
 פעולה זורק():
     ערך = רשימה(1, 2)
@@ -267,7 +267,7 @@ Exceptions are thrown and caught by class type
 נסה:
     זורק()
 תפוס רשימה בתור א:
-    פלוט א
+    הדפס א
 </pre>
 
 <a name="exceptions-types"/>
@@ -291,14 +291,14 @@ As all great programming languages, rpp is equipped with some useful built-ins
 <pre dir="rtl" align="right">
 ר = רשימה(1,2,3)
 ר[2] = אמת
-פלוט ר.גודל() // 3
+הדפס ר.גודל() // 3
 ר.הוסף('שלום')
 ר.הוצא(0)
-פלוט ר.מצא(אמת) // 2
-פלוט ר.מצא('היי') // -1
-פלוט ר // [אמת, 3, 'שלום']
+הדפס ר.מצא(אמת) // 2
+הדפס ר.מצא('היי') // -1
+הדפס ר // [אמת, 3, 'שלום']
 לכל איבר בתוך ר:
-    פלוט איבר
+    הדפס איבר
 </pre>
 
 <a name="built-ins-dict"/>
@@ -313,12 +313,12 @@ For looping a Dictionary will yield it's keys
 ר = מילון()
 ר['שם'] = 'רשי ועוד ועוד'
 ר['גרסה'] = '0.1'
-פלוט ר.גודל() // 2
+הדפס ר.גודל() // 2
 ר.הוצא('גרסה')
-פלוט ר.מכיל('שם') // אמת
-פלוט ר // {'שם': 'רשי ועוד ועוד'}
+הדפס ר.מכיל('שם') // אמת
+הדפס ר // {'שם': 'רשי ועוד ועוד'}
 לכל מפתח בתוך ר:
-    פלוט מפתח
+    הדפס מפתח
 // שם
 </pre>
 
@@ -331,7 +331,7 @@ Similarly to Python, rpp has a built-in Range functionality, with two calling si
 - Iterate from min to max-1: `טווח(10, 20)`
 
 <pre dir="rtl" align="right">
-לכל מ בתוך טווח(10) אם מ % 2 שווהל 0 פלוט "זוגי" אחרת פלוט "איזוגי"
+לכל מ בתוך טווח(10) אם מ % 2 שווהל 0 הדפס "זוגי" אחרת הדפס "איזוגי"
 // זוגי, איזוגי, ...
 </pre>
 
@@ -339,7 +339,7 @@ Similarly to Python, rpp has a built-in Range functionality, with two calling si
 
 ### I/O
 
-- Printing to console: the `פלוט` command.
+- Printing to console: the `הדפס` command.
 - Receiving input from the user: the `(פלט)קלוט` function
 
 Currently, Rashi Plus Plus supports hebrew I/O in the console!
@@ -349,10 +349,10 @@ Currently, Rashi Plus Plus supports hebrew I/O in the console!
 (To enable hebrew in the windows console, please enable a TrueType font such as "Courier New")
 
 <pre dir="rtl" align="right">
-פלוט 'שלום'
-פלוט 90
-פלוט אמת
-פלוט רשימה()
+הדפס 'שלום'
+הדפס 90
+הדפס אמת
+הדפס רשימה()
 
 קלוט('>')
 קלוט('מי אתה? ')
@@ -368,7 +368,7 @@ Similarly to Python, rpp has a built-in Range functionality, with two calling si
 2. Iterate [min, max): `טווח(10, 20)`
 
 <pre dir="rtl" align="right">
-לכל מ בתוך טווח(10) אם מ % 2 שווהל 0 פלוט "זוגי" אחרת פלוט "איזוגי"
+לכל מ בתוך טווח(10) אם מ % 2 שווהל 0 הדפס "זוגי" אחרת הדפס "איזוגי"
 // זוגי, איזוגי, ...
 </pre>
 
@@ -388,9 +388,9 @@ Three random function signatures:
 - String literals can be written with single (') or double (") quotes
 
 <pre dir="rtl" align="right">
-פלוט "המספר הוא " + טקסט(34) // המספר הוא 34
-פלוט מספר("3") * 2 // 6
-פלוט סוג(אמת) // <bool>
+הדפס "המספר הוא " + טקסט(34) // המספר הוא 34
+הדפס מספר("3") * 2 // 6
+הדפס סוג(אמת) // <bool>
 </pre>
 
 <a name="patterns"/>
@@ -429,5 +429,5 @@ To implement an Iterator in rpp, a class must implement the following:
 שמות = קומבינציות(רשימה('דניאל', 'דני', 'רון'), רשימה('שמעון', 'בכר'))
 
 לכל שם בתוך שמות:
-    פלוט שם
+    הדפס שם
 </pre>

@@ -15,44 +15,46 @@ void print(const string& s) {
     Hebrew::print(s, true, false);
 }
 
-int execute(string* source, Interpreter *interpreter = nullptr)
+template<bool eval>
+int _execute(string&& source, Interpreter& interpreter)
 {
-    bool eval = false;
-    if (interpreter)
-        eval = true;
-    else
-        interpreter = new Interpreter();
-
     try
     {
-        Lexer *lexer = new Lexer(source);
-        vector<Token *> tokens = lexer->scan();
-        Parser *parser = new Parser(tokens);
+        Lexer lexer(move(source));
+        Parser parser(lexer.scan());
 
-        if (eval) {
-            Value* value = interpreter->execute(parser->parse(), true);
-            interpreter->print(value, false);
-        } else
-            interpreter->execute(parser->parse());
+        if constexpr (eval) {
+            Value* value = interpreter.execute<true>(parser.parse());
+            interpreter.print(value, false);
+        }
+        else
+            interpreter.execute<false>(parser.parse());
 
-        delete lexer;
-        delete parser;
     } catch (vector<RPPException>& exceptions)
     {
         for (const RPPException& exception : exceptions)
             print(exception.what());
 
-        if (!eval)
+        if constexpr (!eval)
             return 1;
     } catch (RPPException& exception)
     {
         print(exception.what());
 
-        if (!eval)
+        if constexpr (!eval)
             return 1;
     }
 
     return 0;
+}
+
+inline int execute(string&& source) {
+    Interpreter interpreter{};
+    return _execute<false>(move(source), interpreter);
+}
+
+inline int execute(string&& source, Interpreter& interpreter) {
+    return _execute<true>(move(source), interpreter);
 }
 
 int _main(int argC, char** _argV)
@@ -75,12 +77,11 @@ int _main(int argC, char** _argV)
     if (argC == 2 && (argV[1] == "-i" || argV[1] == "--interactive"))
     {
         print("Welcome to interactive rpp (" version ")!");
-        Interpreter* interpreter = new Interpreter();
+        Interpreter interpreter{};
         while (true)
         {
             Hebrew::print("> ", false);
-            auto source = Hebrew::read();
-            returnValue = execute(&source, interpreter);
+            returnValue = execute(Hebrew::read(), interpreter);
             if (returnValue != 0)
                 return returnValue;
         }
@@ -103,11 +104,11 @@ int _main(int argC, char** _argV)
             buff += line + "\n";
         }
 
-        return execute(new string(buff));
+        return execute(move(buff));
     }
     if (argC == 3 && argV[1] == "-c")
     {
-        return execute(new string(argV[2]));
+        return execute(string(argV[2]));
     }
 
     print("usage:\n\r\trpp [path] [-v] [--version] [-c code] [-i] [--interactive]");
