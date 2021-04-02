@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.5)
 project(rpp)
 
 set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_EXE_LINKER_FLAGS)
+if(NOT APPLE) 
+	set(CMAKE_EXE_LINKER_FLAGS)
+endif()
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
